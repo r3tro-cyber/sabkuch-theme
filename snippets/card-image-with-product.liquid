@@ -41,13 +41,12 @@
     endif
   endif
 -%}
-{%- if product != blank -%}
-  <a
-    href="{{ product.url }}"
-    class="card-media--link focus-inset"
-    aria-label="{{ product.title | escape }}"
-  >
-{%- endif -%}
+{%- assign card_prod_url = product.url | default: '/collections/all' -%}
+<a
+  href="{{ card_prod_url }}"
+  class="card-media--link focus-inset"
+  aria-label="{{ product.title | default: heading | default: shop.name | escape }}"
+>
 <div class="pr-img-card btn-hover-wrapper">
   <div class="relative z-0 blocks-radius color-{{ color_scheme }}">
     <motion-element class="block h-full" data-motion="zoom-out-sm">
@@ -67,7 +66,18 @@
               alt: alt
           }}
         {%- else -%}
-          {{ 'image' | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+          {% capture img_c %}{% cycle 1, 2, 3, 4, 5, 6 %}{% endcapture %}
+          {% assign demo_img_p = 'demo-product-' | append: img_c | append: '.webp' %}
+          <img
+            src="{{ demo_img_p | asset_url }}"
+            alt="{{ alt }}"
+            loading="lazy"
+            class="motion-reduce absolute inset-0 w-full h-full object-cover"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          >
+          <div style="display:none;" class="w-full h-full">
+            {{ 'image' | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+          </div>
         {%- endif -%}
         <div class="bg-overlay"></div>
       </picture>
@@ -181,6 +191,4 @@
     </div>
   </div>
 </div>
-{%- if product != blank -%}
-  </a>
-{%- endif -%}
+</a>

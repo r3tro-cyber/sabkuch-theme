@@ -83,6 +83,16 @@
           -}}
         </picture>
       </motion-element>
+    {%- else -%}
+      <div class="block w-full h-full absolute inset-0 z--1 overflow-hidden blocks-radius">
+        <img
+          src="{{ 'demo-banner-1.webp' | asset_url }}"
+          alt="Promotion Banner"
+          loading="lazy"
+          class="w-full h-full object-cover opacity-25"
+          onerror="this.style.display='none';"
+        >
+      </div>
     {%- endif -%}
     <div class="promotion-banner__inner promotion-banner__inner--{{ section.settings.layout }} rich-text rich-text--tight flex {{ flex_direction }} {{ alignment_classes }}">
       {%- for block in section.blocks -%}

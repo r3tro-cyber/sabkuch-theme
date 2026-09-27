@@ -96,7 +96,16 @@
               data-motion="zoom-out-sm"
               class="products-bundle__image-placeholder{% if image_mobile != blank %} hidden md:block{% else %} block{% endif %}"
             >
-              {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
+              <img
+                src="{{ 'demo-banner-2.webp' | asset_url }}"
+                alt="Products Bundle"
+                loading="lazy"
+                class="motion-reduce w-full h-full object-cover"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              >
+              <div style="display:none;" class="w-full h-full">
+                {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
+              </div>
             </motion-element>
           {%- endif -%}
           {%- if image != blank or image_mobile != blank -%}
@@ -185,6 +194,10 @@
               {%- for block in section.blocks -%}
                 {%- liquid
                   assign card_product = block.settings.product
+                  if card_product == blank and collections['all'].products.size > 0
+                    assign prod_idx = forloop.index0
+                    assign card_product = collections['all'].products[prod_idx]
+                  endif
                 -%}
                 <div
                   class="f-column swiper-slide"
@@ -209,7 +222,7 @@
                       -%}
                     </product-bundle-variant-selector>
                   {% else %}
-                    {% render 'card-product-placeholder', image_ratio: section.settings.pcard_image_ratio %}
+                    {% render 'card-product-placeholder', image_ratio: section.settings.pcard_image_ratio, current: forloop.index, index: forloop.index %}
                   {% endif %}
                 </div>
               {% endfor %}

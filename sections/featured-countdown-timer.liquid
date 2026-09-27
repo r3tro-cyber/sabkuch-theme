@@ -52,13 +52,12 @@
             assign card_classes = 'card-media card-media--auto-height card-media--content-' | append: content_position | append: ' card-media--' | append: block.settings.content_spacing
             assign card_classes = card_classes | append: ' relative overflow-hidden hover-wrapper color-' | append: block.settings.color_scheme
             -%}
-          {%- if block.settings.card_link != blank -%}
-            <a
-              href="{{ block.settings.card_link }}"
-              class="card-media--link focus-inset"
-              aria-label="{{ block.settings.heading | default: shop.name }}"
-            >
-          {%- endif -%}
+          {%- assign timer_link = block.settings.card_link | default: '/collections/all' -%}
+          <a
+            href="{{ timer_link }}"
+            class="card-media--link focus-inset"
+            aria-label="{{ block.settings.heading | default: shop.name }}"
+          >
           <div class="{{ card_classes }}">
             <div class="card-media__media-wrapper overflow-hidden block w-full h-full">
               <motion-element class="block h-full" data-motion="zoom-out-sm">
@@ -87,7 +86,16 @@
                         alt: background_image_alt
                     }}
                   {%- else -%}
-                    {{ 'image' | placeholder_svg_tag: 'placeholder-svg hover-scale-up w-full h-full' }}
+                    <img
+                      src="{{ 'demo-banner-1.webp' | asset_url }}"
+                      alt="Holiday Season Sale"
+                      loading="lazy"
+                      class="motion-reduce absolute inset-0 w-full h-full object-cover hover-scale-up"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    >
+                    <div style="display:none;" class="w-full h-full">
+                      {{ 'image' | placeholder_svg_tag: 'placeholder-svg hover-scale-up w-full h-full' }}
+                    </div>
                   {%- endif -%}
 
                   {% if image_overlay_opacity and image_overlay_opacity > 0 %}
@@ -166,9 +174,6 @@
                   {%- unless block.settings.button_label == blank -%}
                     {% liquid
                       assign button_attr = ''
-                      unless block.settings.card_link
-                        assign button_attr = 'disabled'
-                      endunless
                     %}
                     <motion-element
                       class="card-media__button rich-text__button{% if content_position == 'bottom-button' or content_position == 'middle-content' %} flex-1 flex items-end{% else %} block{% endif %}"
@@ -189,9 +194,7 @@
               </div>
             {%- endif -%}
           </div>
-          {%- if block.settings.card_link != blank-%}
-            </a>
-          {%- endif -%}
+          </a>
         {%- endfor -%}
       </div>
     </div>

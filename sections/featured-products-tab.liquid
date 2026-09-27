@@ -65,11 +65,11 @@
         <div class="tabs__panel flex-1">
           {%- for block in section.blocks -%}
             {%- liquid
-              assign products = blank
-              assign products_to_show = false
-              if block.settings.products != blank
-                assign products = block.settings.products
+              assign products = block.settings.products
+              if products == blank and collections['all'].products.size > 0
+                assign products = collections['all'].products
               endif
+              assign products_to_show = false
               if products.count > 2
                 assign products_to_show = true
               endif
@@ -85,7 +85,7 @@
             >
               <div class="block{% if section.settings.swipe_on_mobile %} swipe-mobile swipe-mobile--1-cols{% endif %}">
                 <grid-list class="f-grid{% if products_to_show %} f-masonry{% endif %} f-grid-2-cols f-grid--gap-2xs f-grid--row-gap-inherit{% if section.settings.swipe_on_mobile %} swipe-mobile__inner{% endif %}">
-                  {%- for product in block.settings.products -%}
+                  {%- for product in products -%}
                     <div class="f-column">
                       {%- liquid
                         assign image_ratio = section.settings.pcard_image_ratio

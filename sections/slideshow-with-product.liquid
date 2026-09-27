@@ -130,8 +130,18 @@
                         hold
                         class="slideshow-with-product__slide-placeholder h-full{% if background_mobile != blank %} hidden md:block{% else %} block{% endif %}"
                       >
-                        {% capture current %}{% cycle 1, 2 %}{% endcapture %}
-                        {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                        {% capture current %}{% cycle 1, 2, 3 %}{% endcapture %}
+                        {% assign demo_slide_bg = 'demo-hero-' | append: current | append: '.webp' %}
+                        <img
+                          src="{{ demo_slide_bg | asset_url }}"
+                          alt="Slideshow"
+                          loading="lazy"
+                          class="motion-reduce w-full h-full object-cover"
+                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                        >
+                        <div style="display:none;" class="w-full h-full">
+                          {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                        </div>
                       </motion-element>
                     {%- endif -%}
                     {%- if background_default != blank or background_mobile != blank -%}
@@ -268,9 +278,14 @@
                     hold
                     class="slideshow-with-product__product flex items-end justify-end shrink-0"
                   >
-                    {%- if block.settings.product != blank -%}
+                    {%- assign slide_prod = block.settings.product -%}
+                    {%- if slide_prod == blank and collections['all'].products.size > 0 -%}
+                      {%- assign prod_idx = forloop.index0 -%}
+                      {%- assign slide_prod = collections['all'].products[prod_idx] -%}
+                    {%- endif -%}
+                    {%- if slide_prod != blank -%}
                       {% render 'card-product-boxed',
-                        product: block.settings.product,
+                        product: slide_prod,
                         list_on_mobile: false,
                         image_ratio: section.settings.pcard_image_ratio,
                         image_sizes: '(max-width:767px) 50px, 120px',
@@ -287,7 +302,9 @@
                       {% render 'card-product-placeholder',
                         image_ratio: section.settings.pcard_image_ratio,
                         pcard_style: 'boxed',
-                        custom_class: pcard_placeholder_class
+                        custom_class: pcard_placeholder_class,
+                        current: forloop.index,
+                        index: forloop.index
                       %}
                     {%- endif -%}
                   </motion-element>

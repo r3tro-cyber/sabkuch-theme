@@ -107,8 +107,19 @@
                       -}}
                     </picture>
                   {%- else -%}
-                    {% capture current %}{% cycle 1, 2 %}{% endcapture %}
-                    {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                    {% capture hero_cycle %}{% cycle 1, 2, 3 %}{% endcapture %}
+                    {% assign demo_hero_img = 'demo-hero-' | append: hero_cycle | append: '.webp' %}
+                    <img
+                      src="{{ demo_hero_img | asset_url }}"
+                      alt="{{ block.settings.heading | escape }}"
+                      loading="lazy"
+                      class="motion-reduce absolute inset-0 w-full h-full object-cover hover-scale-up"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    >
+                    <div style="display:none;" class="w-full h-full">
+                      {% capture current %}{% cycle 1, 2 %}{% endcapture %}
+                      {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                    </div>
                   {% endif %}
                 </motion-element>
               </div>

@@ -110,13 +110,12 @@
   {% endcapture %}
 {%- endif -%}
 
-{%- if link -%}
-  <a
-    href="{{ link }}"
-    class="card-media--link focus-inset"
-    aria-label="{{ heading | default: shop.name }}"
-  >
-{%- endif -%}
+{%- assign card_link = link | default: '/collections/all' -%}
+<a
+  href="{{ card_link }}"
+  class="card-media--link focus-inset"
+  aria-label="{{ heading | default: shop.name }}"
+>
 <div class="{{ card_classes }}{% if rounded %} blocks-radius{% endif %}">
   <div class="card-media__media-wrapper relative overflow-hidden block w-full h-full{% if content_position == 'below' and card_color_inherit %} blocks-radius{% endif %}">
     <motion-element class="block h-full" data-motion="zoom-out-sm">
@@ -150,7 +149,18 @@
               alt: alt_image
           }}
         {%- else -%}
-          {{ 'image' | placeholder_svg_tag: 'placeholder-svg hover-scale-up w-full h-full' }}
+          {% capture img_cycle %}{% cycle 1, 2, 3, 4, 5, 6 %}{% endcapture %}
+          {% assign demo_card_img = 'demo-product-' | append: img_cycle | append: '.webp' %}
+          <img
+            src="{{ demo_card_img | asset_url }}"
+            alt="{{ alt_image }}"
+            loading="lazy"
+            class="motion-reduce absolute inset-0 w-full h-full object-cover hover-scale-up"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          >
+          <div style="display:none;" class="w-full h-full">
+            {{ 'image' | placeholder_svg_tag: 'placeholder-svg hover-scale-up w-full h-full' }}
+          </div>
         {%- endif -%}
 
         {% if image_overlay_opacity and image_overlay_opacity > 0 %}
@@ -208,9 +218,6 @@
         {%- if button_label != blank -%}
           {% liquid
             assign button_attr = ''
-            unless link
-              assign button_attr = 'disabled'
-            endunless
           %}
           <motion-element
             class="card-media__button rich-text__button{% if content_position == 'bottom-button' or content_position == 'middle-content' %} flex-1 flex items-end{% else %} block{% endif %}"

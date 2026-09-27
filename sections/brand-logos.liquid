@@ -79,11 +79,7 @@
                 >
                   <div class="brand-logos__wrapper brand-logos--padding-{{ section.settings.image_padding }} brand-logos--image-{{ section.settings.image_width }} flex flex-col items-center justify-start h-full{{ classes }}">
                     <a
-                      {% if block.settings.image_link != blank %}
-                        href="{{ block.settings.image_link }}"
-                      {% else %}
-                        role="link" aria-disabled="true"
-                      {% endif %}
+                      href="{{ block.settings.image_link | default: '/collections/all' }}"
                       class="brand-logos__image relative focus-inset btn-hover-wrapper flex items-center justify-center w-full"
                     >
                       <motion-element
@@ -107,7 +103,10 @@
                               alt: alt_image
                           }}
                         {%- else -%}
-                          {{ 'image' | placeholder_svg_tag: 'placeholder-svg brand-logos__placeholder hover-scale-up' }}
+                          {% capture brand_name %}{% cycle 'VOGUE', 'ELLE', 'ALLURE', 'GLAMOUR', 'BAZAAR', 'VANITY FAIR' %}{% endcapture %}
+                          <div class="brand-logos__placeholder flex items-center justify-center w-full h-full text-center py-4">
+                            <span class="text-xl md:text-2xl font-serif uppercase tracking-widest opacity-60 font-semibold">{{ brand_name }}</span>
+                          </div>
                         {%- endif -%}
                       </motion-element>
                     </a>

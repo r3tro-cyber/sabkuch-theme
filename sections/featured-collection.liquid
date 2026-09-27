@@ -187,6 +187,9 @@ calc(100vw / {{ columns_desktop }})
         {% for block in section.blocks %}
           {% liquid
             assign collection = collections[block.settings.collection]
+            if collection == blank and collections['all'].products.size > 0
+              assign collection = collections['all']
+            endif
             assign products_to_display = section.settings.limit
             if collection != blank and collection.all_products_count < products_to_display
               assign products_to_display = collection.all_products_count
@@ -279,7 +282,9 @@ calc(100vw / {{ columns_desktop }})
                     <div class="f-column{% if enable_slider %} swiper-slide{% endif %}">
                       {% render 'card-product-placeholder',
                         image_ratio: section.settings.pcard_image_ratio,
-                        parent_color_scheme: section.settings.color_scheme
+                        parent_color_scheme: section.settings.color_scheme,
+                        current: forloop.index,
+                        index: forloop.index
                       %}
                     </div>
                   {%- endfor -%}

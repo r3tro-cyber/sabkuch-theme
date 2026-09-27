@@ -72,11 +72,7 @@
 -%}
 <div class="collection-card collection-card--style-{{ card_style }} collection-card--mobile-layout-{{ mobile_layout }} collection-card--image-{{ image_width }} collection-card--image-padding-{{ image_padding }}{% if show_border %} collection-card--boxed{% endif %}{% if has_bg %} collection-card--has-bg{% endif %}{% if card_boxed %} {{ corner_radius }}{% endif %} color-{{ color_scheme }} h-full {{ classes }}">
   <a
-    {% if collection != blank %}
-      href="{{ collection.url }}"
-    {% else %}
-      role="link" aria-disabled="true"
-    {% endif %}
+    href="{{ collection.url | default: '/collections/all' }}"
     class="collection-card__wrapper relative flex flex-col items-center justify-start{% if card_style == 'standard' %} text-center{% endif %} focus-inset btn-hover-wrapper"
     {% unless featured_image != blank %}
       aria-label="{{ collection_title_default }}"
@@ -102,9 +98,20 @@
               alt: alt_image
           }}
         {%- else -%}
-          <div class="collection-card__placeholder hover-scale-up">
-            {% capture current %}{% cycle 1, 2, 3 %}{% endcapture %}
-            {{ 'collection-' | append: current | placeholder_svg_tag: 'placeholder-svg' }}
+          <div class="collection-card__placeholder hover-scale-up w-full h-full">
+            {% capture cat_cycle %}{% cycle 1, 2, 3, 4, 5, 6 %}{% endcapture %}
+            {% assign demo_cat_img = 'demo-category-' | append: cat_cycle | append: '.webp' %}
+            <img
+              src="{{ demo_cat_img | asset_url }}"
+              alt="{{ collection_title_default | escape }}"
+              loading="lazy"
+              class="motion-reduce w-full h-full object-cover"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            >
+            <div style="display:none;" class="w-full h-full">
+              {% capture current %}{% cycle 1, 2, 3 %}{% endcapture %}
+              {{ 'collection-' | append: current | placeholder_svg_tag: 'placeholder-svg' }}
+            </div>
           </div>
         {%- endif -%}
       </motion-element>

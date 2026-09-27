@@ -35,10 +35,8 @@
           {%- for block in section.blocks -%}
             <div class="button-list__item{% if enable_slider %} swiper-slide{% endif %}">
               {%- liquid
-                assign tag = 'div'
-                if block.settings.button_link != blank
-                  assign tag = 'a'
-                endif
+                assign tag = 'a'
+                assign item_href = block.settings.button_link | default: '/collections/all'
               -%}
               <div
                 class="block button-item{% if block.settings.icon_img != blank %} button-item--image{% elsif block.settings.icon != 'none' %} button-item--icon{% endif %}"
@@ -47,9 +45,7 @@
               >
                 <{{ tag }}
                   class="button-item__inner hover-wrapper btn {{ section.settings.item_button_style }}"
-                  {% if block.settings.button_link != blank %}
-                    href="{{ block.settings.button_link }}"
-                  {% endif %}
+                  href="{{ item_href }}"
                 >
                   <span class="btn__text flex items-center gap-x-2">
                     {%- if block.settings.icon_img != blank -%}

@@ -40,6 +40,10 @@
         {%- for block in section.blocks -%}
           {% liquid
             assign product = block.settings.product
+            if product == blank and collections['all'].products.size > 0
+              assign prod_idx = forloop.index0
+              assign product = collections['all'].products[prod_idx]
+            endif
             assign background_default = block.settings.image
             assign background_mobile = block.settings.image_mobile
 
@@ -61,8 +65,19 @@
                     data-motion="zoom-out-sm"
                     class="h-full{% if background_mobile != blank %} hidden md:block{% else %} block{% endif %}"
                   >
-                    {% capture current %}{% cycle 1, 2 %}{% endcapture %}
-                    {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                    {% capture fav_cycle %}{% cycle 1, 2 %}{% endcapture %}
+                    {% assign demo_fav_img = 'demo-banner-' | append: fav_cycle | append: '.webp' %}
+                    <img
+                      src="{{ demo_fav_img | asset_url }}"
+                      alt="Favorite Products"
+                      loading="lazy"
+                      class="motion-reduce w-full h-full object-cover"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    >
+                    <div style="display:none;" class="w-full h-full">
+                      {% capture current %}{% cycle 1, 2 %}{% endcapture %}
+                      {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                    </div>
                   </motion-element>
                 {%- endif -%}
                 {%- if background_default != blank or background_mobile != blank -%}
@@ -138,12 +153,16 @@
                     {% render 'card-product-placeholder',
                       image_ratio: section.settings.pcard_image_ratio,
                       pcard_style: 'boxed',
-                      custom_class: pcard_placeholder_class
+                      custom_class: pcard_placeholder_class,
+                      current: forloop.index,
+                      index: forloop.index
                     %}
                   {%- else -%}
                     {% render 'card-product-placeholder',
                       image_ratio: section.settings.pcard_image_ratio,
-                      color_inherit: false
+                      color_inherit: false,
+                      current: forloop.index,
+                      index: forloop.index
                     %}
                   {% endif %}
                 {%- endif -%}

@@ -86,7 +86,10 @@
       <div class="tabs__panel">
         {%- for block in section.blocks -%}
           {% liquid
-            assign collection = block.settings.collection
+            assign collection = collections[block.settings.collection]
+            if collection == blank and collections['all'].products.size > 0
+              assign collection = collections['all']
+            endif
             assign button_style = block.settings.button_style
             assign button_label = block.settings.button_label
             assign collection_desc = block.settings.text
@@ -146,16 +149,26 @@
               {% else %}
                 {%- for i in (1..4) -%}
                   <div class="f-column">
-                    <div class="w-full blocks-radius-md">
+                    <a href="/collections/all" class="block w-full blocks-radius-md focus-inset">
                       <motion-element
                         data-motion="zoom-out-sm"
                         class="block product__media media-wrapper pointer-events-none"
                         style="--aspect-ratio:1;"
                       >
-                        {% capture current %}{% cycle 1, 2, 3, 4, 5, 6 %}{% endcapture %}
-                        {{ 'product-' | append: current | placeholder_svg_tag: 'placeholder-svg motion-reduce' }}
+                        {% assign demo_tab_img = 'demo-product-' | append: forloop.index | append: '.webp' %}
+                        <img
+                          src="{{ demo_tab_img | asset_url }}"
+                          alt="Demo Product"
+                          loading="lazy"
+                          class="motion-reduce w-full h-full object-cover"
+                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                        >
+                        <div style="display:none;" class="w-full h-full">
+                          {% capture current %}{% cycle 1, 2, 3, 4 %}{% endcapture %}
+                          {{ 'product-' | append: current | placeholder_svg_tag: 'placeholder-svg motion-reduce' }}
+                        </div>
                       </motion-element>
-                    </div>
+                    </a>
                   </div>
                 {%- endfor -%}
               {% endif %}
@@ -211,11 +224,7 @@
           assign default_label = 'onboarding.collection_title' | t
         %}
         <a
-          {% if collection != blank %}
-            href="{{ collection.url }}"
-          {% else %}
-            role="link" aria-disabled="true"
-          {% endif %}
+          href="{{ collection.url | default: '/collections/all' }}"
           aria-label="{{ collection_title }}"
           class="hover-wrapper collection-tabs__image block focus-inset{% if forloop.first %} is-active{% endif %}"
           data-index="{{ forloop.index0}}"
@@ -243,11 +252,21 @@
               </picture>
             {%- else -%}
               {% capture current %}{% cycle 1, 2, 3 %}{% endcapture %}
-              {{
-                'collection-'
-                | append: current
-                | placeholder_svg_tag: 'placeholder-svg motion-reduce hover-scale-up'
-              }}
+              {% assign demo_tab_bg = 'demo-banner-' | append: current | append: '.webp' %}
+              <img
+                src="{{ demo_tab_bg | asset_url }}"
+                alt="{{ collection_title }}"
+                loading="lazy"
+                class="motion-reduce hover-scale-up w-full h-full object-cover"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              >
+              <div style="display:none;" class="w-full h-full">
+                {{
+                  'collection-'
+                  | append: current
+                  | placeholder_svg_tag: 'placeholder-svg motion-reduce hover-scale-up'
+                }}
+              </div>
             {%- endif -%}
           </motion-element>
         </a>

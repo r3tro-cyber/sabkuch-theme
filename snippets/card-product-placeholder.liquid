@@ -30,13 +30,39 @@
     assign color_inherit = false
   endif
 %}
+{%- capture demo_titles -%}
+Barrier Restore Serum,Nourishing Ceramide Cream,Hydrating Daily Cleanser,Brightwave Vitamin C,Finishing Silk Powder,Moisture Repair Shampoo,Balancing Botanical Toner,Velvet Matte Lipstick
+{%- endcapture -%}
+{%- assign titles_arr = demo_titles | strip_newlines | split: ',' -%}
+{%- assign title_idx = current | default: index | default: forloop.index | default: 1 | minus: 1 | modulo: titles_arr.size -%}
+{%- assign fallback_title = 'onboarding.product_title' | t -%}
+{%- assign demo_title = titles_arr[title_idx] | default: fallback_title -%}
+{%- assign prod_img_idx = current | default: index | default: forloop.index | default: 1 | modulo: 6 | plus: 1 -%}
+{%- assign demo_prod_img = 'demo-product-' | append: prod_img_idx | append: '.webp' -%}
 <div class="product-card product-card-style-{{ pcard_style }}{% if pcard_style == 'card' %} color-{{ pcard_color_scheme }}{% endif %} {{ custom_class }}{% if color_inherit %} color-inherit{% endif %}">
   <div class="product-card__wrapper{% if horizontal_layout %} flex items-center gap-x-3{% endif %}">
     <div class="product-card__image-wrapper" style="--aspect-ratio: {{ image_ratio }};">
-      {{ 'product-' | append: current | placeholder_svg_tag: 'placeholder-svg' }}
+      <a href="/collections/all" class="block w-full h-full" aria-label="{{ demo_title }}">
+        <motion-element data-motion="zoom-out-sm" class="block w-full h-full">
+          <img
+            src="{{ demo_prod_img | asset_url }}"
+            alt="{{ demo_title }}"
+            loading="lazy"
+            class="motion-reduce w-full h-full object-cover hover-scale-up"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          >
+          <div style="display:none;" class="w-full h-full">
+            {{ 'product-' | append: current | placeholder_svg_tag: 'placeholder-svg' }}
+          </div>
+        </motion-element>
+      </a>
     </div>
     <div class="product-card__info{% if horizontal_layout %} flex-1 text-left{% endif %}">
-      <h3 class="product-card__title text-pcard-title">{{- 'onboarding.product_title' | t -}}</h3>
+      <h3 class="product-card__title text-pcard-title">
+        <a href="/collections/all" class="hover:underline">
+          {{- demo_title -}}
+        </a>
+      </h3>
       {% render 'price' %}
     </div>
   </div>

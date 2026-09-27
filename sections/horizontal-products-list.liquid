@@ -11,6 +11,9 @@
   assign columns_mobile = section.settings.columns_mobile | plus: 0
 
   assign collection = collections[section.settings.collection]
+  if collection == blank and collections['all'].products.size > 0
+    assign collection = collections['all']
+  endif
   assign products_to_display = section.settings.limit
   if collection != blank and collection.all_products_count < products_to_display
     assign products_to_display = collection.all_products_count
@@ -85,7 +88,9 @@
                       image_ratio: section.settings.pcard_image_ratio,
                       pcard_style: 'standard',
                       parent_color_scheme: section.settings.color_scheme,
-                      horizontal_layout: true
+                      horizontal_layout: true,
+                      current: forloop.index,
+                      index: forloop.index
                     %}
                   </div>
                 {%- endfor -%}

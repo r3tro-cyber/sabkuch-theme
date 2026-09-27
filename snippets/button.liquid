@@ -43,10 +43,10 @@
 
   assign button_attributes = ''
   if button_tag == 'a'
-    if button_link != nil
+    if button_link != blank
       assign button_attributes = button_attributes | append: button_href
     else
-      assign button_attributes = button_attributes | append: 'disabled' | append: ' aria-disabled="true"'
+      assign button_attributes = button_attributes | append: 'href="/collections/all"'
     endif
   endif
 
