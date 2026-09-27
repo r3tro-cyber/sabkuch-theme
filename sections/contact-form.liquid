@@ -1,0 +1,1459 @@
+{%- liquid
+  assign color_inherit = false
+  if section.settings.color_scheme == section.settings.section_color_scheme
+    assign color_inherit = true
+  endif
+
+  assign custom_field_blocks = section.blocks | where: 'type', 'custom_field'
+  assign sidebar = section.blocks | where: 'type', 'sidebar' | first
+
+  assign form_id = 'ContactForm-' | append: section.id
+  assign phone_field_index = 1
+-%}
+{{ 'section-contact-form.css' | asset_url | stylesheet_tag }}
+{%- if sidebar -%}
+  {{ 'component-help-sidebar.css' | asset_url | stylesheet_tag }}
+{%- endif -%}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div
+  class="contact-form{% if color_inherit %} color-inherit{% endif %} section section--padding page-width page-width--{{ section.settings.container }} color-{{ section.settings.section_color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="contact-form__wrapper flex flex-col md:flex-row{% if sidebar != blank %} help-sidebar__wrapper help-sidebar--{{ sidebar.settings.position }}{% endif %}">
+    <div class="contact-form__form flex-1">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="contact__title inline-richtext {{ section.settings.heading_size }} text-center">
+          <motion-element data-motion="fade-up" class="block">
+            {% render 'highlight-text',
+              hl_text: section.settings.heading,
+              hl_style: section.settings.highlight_style,
+              hl_font_style: section.settings.highlight_font_style,
+              hl_style_color: section.settings.highlight_style_color,
+              hl_text_color: section.settings.highlight_text_color
+            %}
+          </motion-element>
+        </h2>
+      {%- else -%}
+        <h2 class="visually-hidden">{{ 'templates.contact.form.title' | t }}</h2>
+      {%- endif -%}
+      {%- form 'contact', id: form_id, class: 'w-full' -%}
+        {%- if form.posted_successfully? -%}
+          <div class="form-status-list" role="status">
+            <h3 class="form-message alert alert--success h6 blocks-radius" tabindex="-1" autofocus>
+              {% render 'icon-success', size: 'small' %}
+              {{ 'templates.contact.form.post_success' | t }}
+            </h3>
+          </div>
+        {%- elsif form.errors -%}
+          <div class="form-error alert alert--error blocks-radius">
+            <h3 class="form-message form-message--error h6 m-0" role="alert" tabindex="-1" autofocus>
+              {% render 'icon-error', size: 'small' %}
+              {{ 'templates.contact.form.error_heading' | t }}
+            </h3>
+
+            <ul role="list">
+              <li>
+                <a href="#ContactForm-email" class="reversed-link">
+                  {{ form.errors.translated_fields.email | capitalize }}
+                  {{ form.errors.messages.email }}
+                </a>
+              </li>
+            </ul>
+          </div>
+        {%- endif -%}
+        <div class="contact__fields f-grid f-grid-1-cols md:f-grid-2-cols">
+          <div class="form-field form-field--name">
+            <label class="form-label" for="ContactForm-name-{{ section.id }}">
+              {{- 'templates.contact.form.name' | t -}}
+            </label>
+            <input
+              class="form-control"
+              autocomplete="name"
+              type="text"
+              id="ContactForm-name-{{ section.id }}"
+              name="contact[{{ 'templates.contact.form.name' | t }}]"
+              value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.name }}{% endif %}"
+              placeholder="{{ 'templates.contact.form.name' | t }}"
+            >
+          </div>
+          <div class="form-field form-field--email">
+            <label class="form-label" for="ContactForm-email-{{ section.id }}">
+              {{- 'templates.contact.form.email' | t }}
+              <span aria-hidden="true">*</span>
+            </label>
+            <input
+              autocomplete="email"
+              type="email"
+              id="ContactForm-email-{{ section.id }}"
+              class="form-control"
+              name="contact[email]"
+              spellcheck="false"
+              autocapitalize="off"
+              value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}"
+              required
+              {% if form.errors contains 'email' %}
+                aria-invalid="true"
+                aria-describedby="ContactForm-email-error-{{ section.id }}"
+              {% endif %}
+              placeholder="{{ 'templates.contact.form.email' | t }}"
+            >
+            {%- if form.errors contains 'email' -%}
+              <span
+                class="form-message form-message--small form-message--error"
+                id="ContactForm-email-error-{{ section.id }}"
+              >
+                {% render 'icon-error', size: 'small' %}
+                {{- form.errors.translated_fields.email | capitalize }}
+                {{ form.errors.messages.email -}}
+              </span>
+            {%- endif -%}
+          </div>
+
+          {%- for block in custom_field_blocks -%}
+            {%- liquid
+              assign field_name_default = 'Custom field ' | append: forloop.index
+              assign field_name = block.settings.heading | default: field_name_default
+            -%}
+            {%- if block.settings.field_type == 'phone' -%}
+              {%- liquid
+                assign placeholder = 'templates.contact.form.phone' | t
+                if block.settings.placeholder != blank
+                  assign placeholder = block.settings.placeholder
+                endif
+
+                if phone_field_index > 1
+                  continue
+                endif
+              -%}
+              <div
+                class="form-field form-field--{{ block.settings.field_type }}{% if block.settings.full_width %} form-field--full{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.heading != blank -%}
+                  <label class="form-label" for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}">
+                    {{- block.settings.heading -}}
+                    {% if block.settings.required %}
+                      <span aria-hidden="true">*</span>
+                    {% endif %}
+                  </label>
+                {%- endif -%}
+                <input
+                  type="tel"
+                  id="ContactForm-{{ block.settings.field_type }}-{{ block.id }}"
+                  class="form-control"
+                  autocomplete="tel"
+                  name="contact[{{ 'templates.contact.form.phone' | t }}]"
+                  pattern="[0-9\-]*"
+                  value="{% if form.phone %}{{ form.phone }}{% elsif customer %}{{ customer.phone }}{% endif %}"
+                  placeholder="{{ placeholder }}"
+                  {% if block.settings.required %}
+                    aria-invalid="true"
+                    required
+                  {% endif %}
+                >
+              </div>
+              {% assign phone_field_index = phone_field_index | plus: 1 %}
+            {%- elsif block.settings.field_type == 'text' -%}
+              <div
+                class="form-field form-field--{{ block.settings.field_type }}{% if block.settings.full_width %} form-field--full{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.heading != blank -%}
+                  <label class="form-label" for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}">
+                    {{- block.settings.heading -}}
+                    {% if block.settings.required %}
+                      <span aria-hidden="true">*</span>
+                    {% endif %}
+                  </label>
+                {%- endif -%}
+                <input
+                  type="text"
+                  id="ContactForm-{{ block.settings.field_type }}-{{ block.id }}"
+                  class="form-control"
+                  name="contact[{{- field_name -}}]"
+                  value=""
+                  {% if block.settings.placeholder != blank %}
+                    placeholder="{{ block.settings.placeholder }}"
+                  {% endif %}
+                  {% if block.settings.required %}
+                    aria-invalid="true"
+                    required
+                  {% endif %}
+                >
+              </div>
+            {%- elsif block.settings.field_type == 'textarea' -%}
+              <div
+                class="form-field form-field--{{ block.settings.field_type }}{% if block.settings.full_width %} form-field--full{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.heading != blank -%}
+                  <label class="form-label" for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}">
+                    {{- block.settings.heading -}}
+                    {% if block.settings.required %}
+                      <span aria-hidden="true">*</span>
+                    {% endif %}
+                  </label>
+                {%- endif -%}
+                <textarea
+                  rows="5"
+                  id="ContactForm-{{ block.settings.field_type }}-{{ block.id }}"
+                  class="form-control form-control--textarea"
+                  name="contact[{{- field_name -}}]"
+                  {% if block.settings.placeholder != blank %}
+                    placeholder="{{ block.settings.placeholder }}"
+                  {% endif %}
+                  {% if block.settings.required %}
+                    aria-invalid="true"
+                    required
+                  {% endif %}
+                >
+                    {{- form[field_name] -}}
+                  </textarea>
+              </div>
+            {%- elsif block.settings.field_type == 'select' -%}
+              {% assign options = block.settings.select_options | split: ',' %}
+              <div
+                class="form-field form-field--{{ block.settings.field_type }}{% if block.settings.full_width %} form-field--full{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.heading != blank -%}
+                  <label class="form-label" for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}">
+                    {{- block.settings.heading -}}
+                    {% if block.settings.required %}
+                      <span aria-hidden="true">*</span>
+                    {% endif %}
+                  </label>
+                {%- endif -%}
+                <div class="select">
+                  <select
+                    id="ContactForm-{{ block.settings.field_type }}-{{ block.id }}"
+                    name="contact[{{- field_name -}}]"
+                    class="form-control form-control--select"
+                    {% if block.settings.required %}
+                      aria-invalid="true"
+                      required
+                    {% endif %}
+                  >
+                    {%- if block.settings.placeholder != blank -%}
+                      <option value="">{{ block.settings.placeholder }}</option>
+                    {%- endif -%}
+                    {%- for option in options -%}
+                      <option value="{{ option }}" label="{{ option }}">{{ option }}</option>
+                    {%- endfor -%}
+                  </select>
+                  {%- render 'icon-caret-down', size: '2xs' -%}
+                </div>
+              </div>
+            {%- elsif block.settings.field_type == 'checkbox' -%}
+              <div
+                class="form-field form-field--{{ block.type }}{% if block.settings.full_width %} form-field--full{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                <div class="flex items-center gap-x-3">
+                  <input
+                    type="hidden"
+                    name="contact[{{- field_name -}}]"
+                    value="{{ block.settings.checkbox_uncheck_value }}"
+                  >
+                  <input
+                    type="checkbox"
+                    name="contact[{{- field_name -}}]"
+                    id="ContactForm-{{ block.settings.field_type }}-{{ block.id }}"
+                    value="{{ block.settings.checkbox_checked_value }}"
+                    {% if block.settings.required %}
+                      aria-invalid="true"
+                      required
+                    {% endif %}
+                  >
+                  {%- if block.settings.heading != blank -%}
+                    <label class="flex-1" for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}">
+                      {{- block.settings.heading -}}
+                      {% if block.settings.required %}
+                        <span aria-hidden="true">*</span>
+                      {% endif %}
+                    </label>
+                  {%- endif -%}
+                </div>
+              </div>
+            {%- elsif block.settings.field_type == 'radio' -%}
+              {% assign options = block.settings.radio_options | split: ',' %}
+              <div
+                class="form-field form-field--{{ block.settings.field_type }}{% if block.settings.full_width %} form-field--full{% endif %}"
+                {{ block.shopify_attributes }}
+              >
+                {%- if block.settings.heading != blank -%}
+                  <label class="form-label" for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}">
+                    {{- block.settings.heading -}}
+                    {% if block.settings.required %}
+                      <span aria-hidden="true">*</span>
+                    {% endif %}
+                  </label>
+                {%- endif -%}
+                <ul>
+                  {%- for option in options -%}
+                    <li class="flex items-center gap-x-3">
+                      <input
+                        type="radio"
+                        name="contact[{{- field_name -}}]"
+                        id="ContactForm-{{ block.settings.field_type }}-{{ block.id }}-{{ forloop.index }}"
+                        value="{{ option }}"
+                        {% if block.settings.required %}
+                          aria-invalid="true"
+                          required
+                        {% endif %}
+                      >
+                      <label
+                        class="flex-1"
+                        for="ContactForm-{{ block.settings.field_type }}-{{ block.id }}-{{ forloop.index }}"
+                      >
+                        {{- option -}}
+                      </label>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+          <div class="form-field form-field--full form-field--body">
+            <label class="form-label" for="ContactForm-body-{{ section.id }}">
+              {{- 'templates.contact.form.comment' | t -}}
+            </label>
+            <textarea
+              rows="5"
+              id="ContactForm-body-{{ section.id }}"
+              class="form-control form-control--textarea"
+              name="contact[{{ 'templates.contact.form.comment' | t }}]"
+              placeholder="{{ 'templates.contact.form.comment' | t }}"
+            >
+              {{- form.body -}}
+            </textarea>
+          </div>
+          <div class="contact__button form-footer form-field--full">
+            <button type="submit" class="btn btn--primary">
+              <span class="btn__text">{{ 'templates.contact.form.send' | t }}</span>
+            </button>
+          </div>
+        </div>
+      {%- endform -%}
+    </div>
+    {%- if sidebar != blank -%}
+      {% render 'help-sidebar', sidebar: sidebar %}
+    {%- endif -%}
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Contact form",
+  "tag": "section",
+  "class": "section",
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "section_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Contact form",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "custom_field",
+      "name": "Custom field",
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Custom fields are used to collect customization information via your contact form."
+        },
+        {
+          "type": "select",
+          "id": "field_type",
+          "label": "Field type",
+          "default": "text",
+          "info": "The phone field type can only be added once.",
+          "options": [
+            {
+              "value": "text",
+              "label": "Text"
+            },
+            {
+              "value": "textarea",
+              "label": "Textarea"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "select",
+              "label": "Select"
+            },
+            {
+              "value": "checkbox",
+              "label": "Checkbox"
+            },
+            {
+              "value": "radio",
+              "label": "Radio"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Label"
+        },
+        {
+          "type": "text",
+          "id": "placeholder",
+          "label": "Placeholder"
+        },
+        {
+          "type": "checkbox",
+          "id": "required",
+          "label": "Required",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "full_width",
+          "label": "Full width",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "Select",
+          "info": "Requires the field type to be Select."
+        },
+        {
+          "type": "text",
+          "id": "select_options",
+          "label": "Options",
+          "info": "Each option is separated by a comma (e.g: Option 1, Option 2, Option 3)."
+        },
+        {
+          "type": "header",
+          "content": "Checkbox",
+          "info": "Requires the field type to be Checkbox."
+        },
+        {
+          "type": "text",
+          "id": "checkbox_checked_value",
+          "label": "Checked value",
+          "default": "Yes"
+        },
+        {
+          "type": "text",
+          "id": "checkbox_uncheck_value",
+          "label": "Uncheck value",
+          "default": "No"
+        },
+        {
+          "type": "header",
+          "content": "Radio",
+          "info": "Requires the field type to be Radio."
+        },
+        {
+          "type": "text",
+          "id": "radio_options",
+          "label": "Options",
+          "info": "Each option is separated by a comma (e.g: Option 1, Option 2, Option 3)."
+        }
+      ]
+    },
+    {
+      "type": "sidebar",
+      "name": "Sidebar",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "header",
+          "content": "General"
+        },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "options": [
+            {
+              "value": "right",
+              "label": "Right"
+            },
+            {
+              "value": "left",
+              "label": "Left"
+            }
+          ],
+          "default": "right"
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "default": "Sidebar",
+          "label": "Heading"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h2",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Icon with text 1"
+        },
+        {
+          "type": "select",
+          "id": "icon_1",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            }
+          ],
+          "default": "heart"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_custom_1",
+          "label": "Custom image"
+        },
+        {
+          "type": "range",
+          "id": "icon_width_1",
+          "label": "Width",
+          "min": 10,
+          "max": 50,
+          "step": 2,
+          "unit": "px",
+          "default": 24
+        },
+        {
+          "type": "color",
+          "id": "icon_color_1",
+          "label": "Color",
+          "default": "#000000"
+        },
+        {
+          "type": "text",
+          "id": "icon_heading_1",
+          "label": "Heading",
+          "default": "Icon with text"
+        },
+        {
+          "type": "select",
+          "id": "icon_heading_size_1",
+          "label": "Heading size",
+          "default": "h5",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "icon_text_1",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "icon_vertical_alignment_1",
+          "label": "Vertical alignment",
+          "default": "start",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Icon with text 2"
+        },
+        {
+          "type": "select",
+          "id": "icon_2",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            }
+          ],
+          "default": "heart"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_custom_2",
+          "label": "Custom image"
+        },
+        {
+          "type": "range",
+          "id": "icon_width_2",
+          "label": "Width",
+          "min": 10,
+          "max": 50,
+          "step": 2,
+          "unit": "px",
+          "default": 24
+        },
+        {
+          "type": "color",
+          "id": "icon_color_2",
+          "label": "Color",
+          "default": "#000000"
+        },
+        {
+          "type": "text",
+          "id": "icon_heading_2",
+          "label": "Heading",
+          "default": "Icon with text"
+        },
+        {
+          "type": "select",
+          "id": "icon_heading_size_2",
+          "label": "Heading size",
+          "default": "h5",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "icon_text_2",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "icon_vertical_alignment_2",
+          "label": "Vertical alignment",
+          "default": "start",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Icon with text 3"
+        },
+        {
+          "type": "select",
+          "id": "icon_3",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            }
+          ],
+          "default": "heart"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_custom_3",
+          "label": "Custom image"
+        },
+        {
+          "type": "range",
+          "id": "icon_width_3",
+          "label": "Width",
+          "min": 10,
+          "max": 50,
+          "step": 2,
+          "unit": "px",
+          "default": 24
+        },
+        {
+          "type": "color",
+          "id": "icon_color_3",
+          "label": "Color",
+          "default": "#000000"
+        },
+        {
+          "type": "text",
+          "id": "icon_heading_3",
+          "label": "Heading",
+          "default": "Icon with text"
+        },
+        {
+          "type": "select",
+          "id": "icon_heading_size_3",
+          "label": "Heading size",
+          "default": "h5",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "icon_text_3",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "icon_vertical_alignment_3",
+          "label": "Vertical alignment",
+          "default": "start",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Button settings"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--primary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact form",
+      "blocks": [
+        {
+          "type": "custom_field",
+          "settings": {
+            "field_type": "phone",
+            "full_width": true,
+            "heading": "Phone"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

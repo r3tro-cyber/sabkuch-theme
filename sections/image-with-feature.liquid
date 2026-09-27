@@ -1,0 +1,805 @@
+{{ 'section-image-with-feature.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign image = section.settings.image
+  assign image_mobile = section.settings.image_mobile
+  assign image_ratio = section.settings.image_ratio
+  assign loading = 'lazy'
+  assign fetchpriority = 'auto'
+  if section.index <= 2
+    assign loading = 'eager'
+    assign fetchpriority = 'high'
+  endif
+
+  if image_ratio == 'adapt'
+    if image != blank
+      assign image_ratio = image.aspect_ratio
+    else
+      assign image_ratio = '1/1'
+    endif
+  endif
+  assign image_ratio_mobile = image_mobile.aspect_ratio | default: image_ratio
+-%}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div
+  class="section section--padding image-with-feature color-{{ section.settings.color_scheme }} page-width page-width--{{ section.settings.container }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="image-with-feature__wrapper f-flex{% unless section.settings.enable_sticky %} xl:items-center{% endunless %}">
+    <div class="f-column image-with-feature__image md:w-1/2 lg:w-1/3 h-full sticky-element-tablet sticky-element-laptop{% if section.settings.enable_sticky %} sticky-element{% endif %}">
+      <div
+        class="media-wrapper overflow-hidden{% unless section.settings.container == 'full' %} blocks-radius{% endunless %}"
+        style="--aspect-ratio: {{ image_ratio }};--aspect-ratio-mobile: {{ image_ratio_mobile }};"
+      >
+        {%- if image == blank -%}
+          <motion-element
+            data-motion="zoom-out-sm"
+            class="image-placeholder{% if image_mobile != blank %} hidden md:block{% else %} block{% endif %}"
+          >
+            {{ 'image' | placeholder_svg_tag: 'placeholder-svg' }}
+          </motion-element>
+        {%- endif -%}
+        {%- if image != blank or image_mobile != blank -%}
+          <motion-element
+            class="w-full h-full block{% if image == blank %} md:hidden{% endif %}"
+            data-motion="zoom-out-sm"
+          >
+            <picture class="media media--height media-wrapper block w-full h-full relative overflow-hidden">
+              {%- if image != blank and image_mobile != blank -%}
+                <source
+                  media="(max-width: 767px)"
+                  srcset="{{ image_mobile | image_url: width: '400x' }} 400w, {{ image_mobile | image_url: width: '600x' }} 600w, {{ image_mobile | image_url: width: '800x' }} 800w, {{ image_mobile | image_url: width: '1000x' }} 1000w"
+                  width="{{ image_mobile.width }}"
+                  height="{{ image_mobile.height }}"
+                >
+              {%- endif -%}
+              {%- liquid
+                if image == blank
+                  assign image = image_mobile
+                endif
+                assign image_height = image.width | divided_by: image.aspect_ratio
+                assign image_alt = image.alt | default: shop.name | escape
+              -%}
+              {{-
+                image
+                | image_url: width: 1500
+                | image_tag:
+                  loading: loading,
+                  width: image.width,
+                  height: image_height,
+                  alt: image_alt,
+                  fetchpriority: fetchpriority,
+                  widths: '165, 360, 535, 750, 1100, 1500',
+                  is: 'image-lazy'
+              -}}
+            </picture>
+          </motion-element>
+        {%- endif -%}
+      </div>
+    </div>
+    <div class="f-column image-with-feature__content flex flex-col justify-center flex-1">
+      {% render 'section-heading', section_settings: section.settings %}
+      <div class="image-with-feature__items f-grid" style="--f-columns-md: 1;--f-columns-lg: 2;">
+        {%- for block in section.blocks -%}
+          <div class="f-column relative image-with-feature__card-wrapper">
+            <div
+              class="image-with-feature__card image-with-feature__card--image-icon flex gap-x-3 text-left h-full"
+              style="--img-max: {{ block.settings.max_width }}px;--img-max-mb: {{ block.settings.max_width_mb }}px;"
+              {{ block.shopify_attributes }}
+            >
+              <div class="image-with-feature__card-image shrink-0">
+                <motion-element
+                  class="block w-full h-full"
+                  data-motion="zoom-out-sm"
+                  style="--aspect-ratio: {{ block.settings.image.aspect_ratio | default: '1' }};"
+                >
+                  {%- if block.settings.image != blank -%}
+                    {% assign alt = block.settings.image.alt | default: block.settings.title | escape %}
+                    <picture class="card-media__media media-wrapper">
+                      {{
+                        block.settings.image
+                        | image_url: width: 1100
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'motion-reduce absolute inset-0 w-full h-full',
+                          widths: '165, 360, 535, 750, 940, 1100',
+                          is: 'image-lazy',
+                          alt: alt
+                      }}
+                    </picture>
+                  {%- elsif block.settings.icon != 'none' -%}
+                    {%- render 'icons', icon: block.settings.icon -%}
+                  {%- else -%}
+                    {{ 'image' | placeholder_svg_tag: 'placeholder-svg blocks-radius-sm' }}
+                  {%- endif -%}
+                </motion-element>
+              </div>
+              <div class="image-with-feature-card__info rich-text rich-text--tight flex-1 flex flex-col items-{{ section.settings.content_alignment | replace: 'left', 'start' | replace: 'right', 'end' }}">
+                {%- if block.settings.title != blank -%}
+                  <h3 class="image-with-feature-card__title rich-text__heading font-{{ block.settings.heading_font }} {{ block.settings.heading_size }}">
+                    {% render 'highlight-text',
+                      hl_text: block.settings.title,
+                      hl_style: block.settings.highlight_style,
+                      hl_font_style: block.settings.highlight_font_style,
+                      hl_style_color: block.settings.highlight_style_color,
+                      hl_text_color: block.settings.highlight_text_color
+                    %}
+                  </h3>
+                {%- endif -%}
+                {%- if block.settings.text != blank -%}
+                  <div class="image-with-feature-card__text rich-text__text rte {{ block.settings.text_size }} text-subtext">
+                    {{ block.settings.text }}
+                  </div>
+                {%- endif -%}
+              </div>
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Image with feature",
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Desktop image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Mobile image"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "Image ratio",
+      "default": "adapt",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "1/1",
+          "label": "Square (1:1)"
+        },
+        {
+          "value": "3/4",
+          "label": "Portrait (3:4)"
+        },
+        {
+          "value": "4/3",
+          "label": "Landscape (4:3)"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky",
+      "label": "Enable sticky on desktop",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "select",
+      "id": "section_header_alignment",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "section_header_alignment_mobile",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text.",
+      "default": "Image with feature"
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h2",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "label": "Show divider",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "label": "Divider width",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 80
+    }
+  ],
+  "blocks": [
+    {
+      "type": "column",
+      "name": "Column",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ],
+          "default": "chat"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "range",
+          "id": "max_width",
+          "min": 10,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "label": "Maximum width",
+          "default": 28
+        },
+        {
+          "type": "range",
+          "id": "max_width_mb",
+          "min": 10,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "label": "Maximum width mobile",
+          "default": 32
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "title",
+          "label": "Heading",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text.",
+          "default": "Column"
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h6",
+          "options": [
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "h6",
+              "label": "Heading - Extra extra small"
+            },
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "heading_font",
+          "label": "Font family",
+          "default": "heading",
+          "options": [
+            {
+              "value": "body-bolder",
+              "label": "Body font"
+            },
+            {
+              "value": "heading",
+              "label": "Headings font"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Use this section to explain a set of product features, to link to a series of pages, or to answer common questions about your products.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image with feature",
+      "blocks": [
+        {
+          "type": "column",
+          "settings": {
+            "icon": "chat"
+          }
+        },
+        {
+          "type": "column",
+          "settings": {
+            "icon": "phone"
+          }
+        },
+        {
+          "type": "column",
+          "settings": {
+            "icon": "paperplane"
+          }
+        },
+        {
+          "type": "column",
+          "settings": {
+            "icon": "map-pin"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

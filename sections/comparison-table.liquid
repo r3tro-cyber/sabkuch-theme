@@ -1,0 +1,2272 @@
+{{ 'section-quick-comparison-table.css' | asset_url | stylesheet_tag }}
+{{ 'section-comparison-table.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign header_layout = section.settings.header_layout
+  assign side_button = true
+  if header_layout == 'standing-column' or header_layout == 'vertical'
+    assign header_layout = 'vertical'
+    assign side_button = false
+  endif
+
+  assign heading_block = section.blocks | find: 'type', 'heading'
+  assign content_block = section.blocks | where: 'type', 'content'
+
+  assign featured_media = product.featured_media
+  if featured_media.media_type == 'model' or featured_media.media_type == 'video'
+    assign featured_media = product.featured_media.preview_image
+  endif
+-%}
+{%- render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+-%}
+<div
+  class="section section--padding page-width page-width--{{ section.settings.container }}  section-header-{{ section.settings.header_layout }} color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <comparison-table class="block comparison-table quick-comparison-table-container">
+    <div class="comparison-table__header">
+      {%- render 'section-heading',
+        section_settings: section.settings,
+        header_layout: section.settings.header_layout,
+        button_label: section.settings.button_label,
+        button_link: section.settings.button_link,
+        button_style: section.settings.button_style,
+        button_icon: section.settings.button_icon,
+        button_visible: true,
+        side_button: side_button,
+        custom_css_class: 'sticky-element'
+      -%}
+    </div>
+    <div class="comparison-table__content h-scrollable relative z-0">
+      <table class="quick-comparison-table text-subtext">
+        {% comment %} Row with Product Images {% endcomment %}
+        <tr>
+          <td class="td-label background-1 text-body"></td>
+          {% for block in content_block %}
+            {% assign product = block.settings.product %}
+            {% assign featured_media = product.featured_media %}
+            <td class="comparison-table__product">
+              <div class="product-featured-image relative">
+                <div class="media-wrapper hover-wrapper blocks-radius" style="--aspect-ratio: 1;">
+                  {% if featured_media %}
+                    {{
+                      featured_media
+                      | image_url: width: featured_media.width
+                      | image_tag:
+                        loading: 'lazy',
+                        fetchpriority: 'low',
+                        class: 'motion-reduce hover-scale-up',
+                        widths: '60, 70, 80, 100, 120, 140, 160, 240, 320, 450,',
+                        sizes: "450px",
+                        is: 'image-lazy'
+                    }}
+                  {% else %}
+                    {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg w-full h-full hover-scale-up' }}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="comparison-table__col-info text-center">
+                <h3 class="text-pcard-title">
+                  <a class="reversed-link block" href="{{ product.url }}">
+                    {% if product != blank %}
+                      <span class="reversed-link__text">{{ product.title }}</span>
+                    {% else %}
+                      <span class="reversed-link__text">{{- 'onboarding.product_title' | t -}}</span>
+                    {% endif %}
+                  </a>
+                </h3>
+                <a href="{{ product.url }}" class="btn btn--primary btn--small">
+                  <span class="btn__text flex gap-1 items-center">{{- 'products.product.shop' | t -}}</span>
+                </a>
+              </div>
+            </td>
+          {% endfor %}
+        </tr>
+
+        {% comment %} Dynamic Feature Rows {% endcomment %}
+        {% for i in (1..10) %}
+          {%- liquid
+            assign title_key = 'title-' | append: i
+            assign text_key = 'text-' | append: i
+            assign has_content = false
+            if heading_block.settings[title_key] != blank
+              assign has_content = true
+            endif
+          -%}
+          {% if has_content %}
+            <tr>
+              {% comment %} Heading Column {% endcomment %}
+              {% assign title = heading_block.settings[title_key] %}
+              {% assign icon_key = 'icon-' | append: i %}
+              {% assign image_key = 'image-' | append: i %}
+              {% assign icon = heading_block.settings[icon_key] %}
+              {% assign image = heading_block.settings[image_key] %}
+
+              <td class="td-label background-1 text-body">
+                {% if title != blank %}
+                  <div
+                    class="comparison-table-card comparison-table-card--image-icon flex items-center gap-x-3 h-full"
+                    style="--img-max: {{ section.settings.icon_size }}px;"
+                    {{ heading_block.shopify_attributes }}
+                  >
+                    <div class="comparison-table-card__image shrink-0 hidden md:block">
+                      <motion-element
+                        class="block w-full h-full"
+                        data-motion="zoom-out-sm"
+                        style="--aspect-ratio: 1/1;"
+                      >
+                        {% if image %}
+                          {% assign alt = image.alt | default: title | escape %}
+                          <picture class="card-media__media media-wrapper">
+                            {{
+                              image
+                              | image_url: width: 1100
+                              | image_tag:
+                                loading: 'lazy',
+                                class: 'motion-reduce absolute inset-0 w-full h-full',
+                                widths: '165, 360, 535, 750, 940, 1100',
+                                is: 'image-lazy',
+                                alt: alt
+                            }}
+                          </picture>
+                        {% elsif icon != 'none' %}
+                          {% render 'icons', icon: icon %}
+                        {% else %}
+                          {{ 'image' | placeholder_svg_tag: 'placeholder-svg blocks-radius-sm' }}
+                        {% endif %}
+                      </motion-element>
+                    </div>
+                    <div class="comparison-table__info rich-text rich-text--tight flex-1">
+                      <div class="multicolumn-card__title rich-text__heading text-body">
+                        <span class="label ml-2">{{ title }}</span>
+                      </div>
+                    </div>
+                  </div>
+                {% endif %}
+              </td>
+
+              {% comment %} Content Columns  {% endcomment %}
+              {% for block in content_block %}
+                {% assign text = block.settings[text_key] %}
+                <td>
+                  {% comment %} <div class="rte text-limit-{{ section.settings.text_line_limit }}">{{ text }}</div> {% endcomment %}
+                  {%- if text != blank -%}
+                    {%- if section.settings.show_view_more_button and section.settings.text_line_limit != 'none' -%}
+                      <read-more
+                        class="read-more__text"
+                        data-line-clamp="{{ section.settings.text_line_limit }}"
+                        data-toggle-class="text-limit-{{ section.settings.text_line_limit }}"
+                        data-show-text="{{ 'accessibility.view_more' | t }}"
+                        data-hide-text="{{ 'accessibility.view_less' | t }}"
+                      >
+                        <div class="read-more__content rte">
+                          {{- text -}}
+                        </div>
+                        <button class="read-more__toggle btn btn--underline">
+                          <span class="btn__text">{{ 'accessibility.view_more' | t }}</span>
+                        </button>
+                      </read-more>
+                    {%- else -%}
+                      <div class="rte text-limit-{{ section.settings.text_line_limit }}">
+                        {{- text -}}
+                      </div>
+                    {%- endif -%}
+                  {%- endif -%}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </table>
+    </div>
+  </comparison-table>
+</div>
+{% schema %}
+{
+  "name": "Comparison table",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "select",
+      "id": "header_layout",
+      "label": "Layout",
+      "default": "standing-column",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "standing-column",
+          "label": "Standing column"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Comparison table",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text",
+      "default": "<p>Displays a quick comparison table for the current product and its related products</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--primary"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Table content"
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "min": 10,
+      "max": 50,
+      "step": 2,
+      "unit": "px",
+      "label": "Icon size",
+      "default": 28
+    },
+    {
+      "type": "select",
+      "id": "text_line_limit",
+      "label": "Text line limit",
+      "default": "2-lines",
+      "options": [
+        {
+          "value": "none",
+          "label": "No limit"
+        },
+        {
+          "value": "1-line",
+          "label": "1 line"
+        },
+        {
+          "value": "2-lines",
+          "label": "2 lines"
+        },
+        {
+          "value": "3-lines",
+          "label": "3 lines"
+        },
+        {
+          "value": "4-lines",
+          "label": "4 lines"
+        },
+        {
+          "value": "5-lines",
+          "label": "5 lines"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_more_button",
+      "label": "Show view more button",
+      "info": "This button displays when the text is limited to a specific number of lines.",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "heading",
+      "limit": 1,
+      "name": "Heading",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Heading"
+        },
+        {
+          "type": "select",
+          "id": "icon-1",
+          "label": "Icon",
+          "default": "chat",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-1",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-1",
+          "label": "Title",
+          "default": "Description"
+        },
+        {
+          "type": "header",
+          "content": "Heading 2"
+        },
+        {
+          "type": "select",
+          "id": "icon-2",
+          "label": "Icon",
+          "default": "chat",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-2",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-2",
+          "label": "Title",
+          "default": "Aluminium Case"
+        },
+        {
+          "type": "header",
+          "content": "Heading 3"
+        },
+        {
+          "type": "select",
+          "id": "icon-3",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-3",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-3",
+          "label": "Title",
+          "default": "Battery"
+        },
+        {
+          "type": "header",
+          "content": "Heading 4"
+        },
+        {
+          "type": "select",
+          "id": "icon-4",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-4",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-4",
+          "label": "Title",
+          "default": "Screen"
+        },
+        {
+          "type": "header",
+          "content": "Heading 5"
+        },
+        {
+          "type": "select",
+          "id": "icon-5",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-5",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-5",
+          "label": "Title",
+          "default": "Display"
+        },
+        {
+          "type": "header",
+          "content": "Heading 6"
+        },
+        {
+          "type": "select",
+          "id": "icon-6",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-6",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-6",
+          "label": "Title"
+        },
+        {
+          "type": "header",
+          "content": "Heading 7"
+        },
+        {
+          "type": "select",
+          "id": "icon-7",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-7",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-7",
+          "label": "Title"
+        },
+        {
+          "type": "header",
+          "content": "Heading 8"
+        },
+        {
+          "type": "select",
+          "id": "icon-8",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-8",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-8",
+          "label": "Title"
+        },
+        {
+          "type": "header",
+          "content": "Heading 9"
+        },
+        {
+          "type": "select",
+          "id": "icon-9",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-9",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-9",
+          "label": "Title"
+        },
+        {
+          "type": "header",
+          "content": "Heading 10"
+        },
+        {
+          "type": "select",
+          "id": "icon-10",
+          "default": "chat",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "image-10",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title-10",
+          "label": "Title"
+        }
+      ]
+    },
+    {
+      "type": "content",
+      "name": "Content",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "richtext",
+          "id": "text-1",
+          "label": "Text"
+        },
+        {
+          "type": "richtext",
+          "id": "text-2",
+          "label": "Text 2"
+        },
+        {
+          "type": "richtext",
+          "id": "text-3",
+          "label": "Text 3"
+        },
+        {
+          "type": "richtext",
+          "id": "text-4",
+          "label": "Text 4"
+        },
+        {
+          "type": "richtext",
+          "id": "text-5",
+          "label": "Text 5"
+        },
+        {
+          "type": "richtext",
+          "id": "text-6",
+          "label": "Text 6"
+        },
+        {
+          "type": "richtext",
+          "id": "text-7",
+          "label": "Text 7"
+        },
+        {
+          "type": "richtext",
+          "id": "text-8",
+          "label": "Text 8"
+        },
+        {
+          "type": "richtext",
+          "id": "text-9",
+          "label": "Text 9"
+        },
+        {
+          "type": "richtext",
+          "id": "text-10",
+          "label": "Text 10"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Comparison table",
+      "blocks": [
+        {
+          "type": "heading"
+        },
+        {
+          "type": "content",
+          "settings": {
+            "text-1": "<p>Hecht and Colin describe employing a process similar</p>",
+            "text-2": "<p>44mm or 40mm</p>",
+            "text-3": "<p>Up to 18\u00a0hours</p>",
+            "text-4": "<p>S8\u00a0SiP</p>",
+            "text-5": "<p>Up to 1,000 nits</p>"
+          }
+        },
+        {
+          "type": "content",
+          "settings": {
+            "text-1": "<p>Inspired to create a chair where the back and arms are moulded</p>",
+            "text-2": "<p>46mm or 42mm</p>",
+            "text-3": "<p>Up to 18\u00a0hours</p>",
+            "text-4": "<p>S10 SiP</p>",
+            "text-5": "<p>Up to 2,000 nits</p>"
+          }
+        },
+        {
+          "type": "content",
+          "settings": {
+            "text-1": "<p>Inspired to create a chair where the back and arms are moulded</p>",
+            "text-2": "<p>49mm</p>",
+            "text-3": "<p>Up to 36\u00a0hours</p>",
+            "text-4": "<p>S9\u00a0SiP</p>",
+            "text-5": "<p>Up to 3,000 nits</p>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

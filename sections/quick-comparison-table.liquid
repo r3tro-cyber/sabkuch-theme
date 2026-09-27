@@ -1,0 +1,427 @@
+{%- liquid
+  assign limit = section.settings.limit
+-%}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<script src="{{ 'quick-comparison-table.js' | asset_url }}" defer="defer"></script>
+{{ 'section-quick-comparison-table.css' | asset_url | stylesheet_tag }}
+<div
+  class="section section--padding page-width page-width--{{ section.settings.container }} color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <quick-comparison-table
+    class="quick-comparison-table"
+    data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ limit }}"
+  >
+    {%- if recommendations.performed and recommendations.products_count > 0 -%}
+      {%- liquid
+        assign products_to_display = recommendations.products_count
+        if products_to_display > limit
+          assign products_to_display = limit
+        endif
+      -%}
+      {% render 'section-heading',
+        section_settings: section.settings,
+        description_size: section.settings.description_size
+      %}
+      <div class="quick-comparison-table-container h-scrollable relative z-0">
+        <table class="quick-comparison-table text-subtext">
+          {%- for block in section.blocks -%}
+            <tr data-compare-key="{{ block.type }}">
+              <td class="td-label background-1 text-body">
+                {%- case block.type -%}
+                  {%- when 'price' -%}
+                    {{ 'products.product.price.label' | t }}
+                  {%- when 'description' -%}
+                    {{ 'products.product.description' | t }}
+                  {%- when 'vendor' -%}
+                    {{ 'products.product.vendor' | t }}
+                  {%- when 'type' -%}
+                    {{ 'products.product.type' | t }}
+                  {%- when 'variants' -%}
+                    {{ 'products.product.product_variants' | t }}
+                {%- endcase -%}
+              </td>
+              {% render 'quick-comparison-table-col', product: product, block: block %}
+              {%- for recommendation in recommendations.products -%}
+                {% render 'quick-comparison-table-col', product: recommendation, block: block %}
+              {%- endfor -%}
+            </tr>
+          {%- endfor -%}
+        </table>
+      </div>
+    {%- endif -%}
+  </quick-comparison-table>
+</div>
+{% schema %}
+{
+  "name": "Quick comparison table",
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "blocks": [
+    {
+      "type": "info",
+      "limit": 1,
+      "name": "Product info",
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_view_details_button",
+          "label": "Show view details button",
+          "default": true
+        }
+      ]
+    },
+    {
+      "type": "description",
+      "limit": 1,
+      "name": "Description",
+      "settings": [
+        {
+          "type": "select",
+          "id": "text_line_limit",
+          "label": "Text line limit",
+          "options": [
+            {
+              "value": "none",
+              "label": "No limit"
+            },
+            {
+              "value": "1-line",
+              "label": "1 line"
+            },
+            {
+              "value": "2-lines",
+              "label": "2 lines"
+            },
+            {
+              "value": "3-lines",
+              "label": "3 lines"
+            },
+            {
+              "value": "4-lines",
+              "label": "4 lines"
+            },
+            {
+              "value": "5-lines",
+              "label": "5 lines"
+            }
+          ],
+          "default": "3-lines"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_view_more_button",
+          "label": "Show view more button",
+          "info": "This button displays when the text is limited to a specific number of lines.",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "price",
+      "limit": 1,
+      "name": "Price"
+    },
+    {
+      "type": "vendor",
+      "limit": 1,
+      "name": "Vendor"
+    },
+    {
+      "type": "type",
+      "limit": 1,
+      "name": "Type"
+    },
+    {
+      "type": "variants",
+      "limit": 1,
+      "name": "Product variants"
+    }
+  ],
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Displays a quick comparison table for the current product and its dynamic recommendations"
+    },
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Quick comparison table",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h2",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text",
+      "default": "<p>Displays a quick comparison table for the current product and its related products</p>"
+    },
+    {
+      "type": "select",
+      "id": "description_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Maximum products to show",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Quick comparison table",
+      "blocks": [
+        {
+          "type": "info"
+        },
+        {
+          "type": "description"
+        },
+        {
+          "type": "price"
+        },
+        {
+          "type": "variants"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

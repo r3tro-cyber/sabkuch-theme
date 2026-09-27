@@ -1,0 +1,1243 @@
+{{ 'component-grid-banner.css' | asset_url | stylesheet_tag }}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div
+  class="section section--padding color-{{ section.settings.color_scheme }} page-width page-width--{{ section.settings.container }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  data-id="{{ section.id }}"
+>
+  {%- render 'section-heading',
+    section_settings: section.settings,
+    description_size: section.settings.description_size,
+    button_visible: true,
+    button_link: section.settings.button_link,
+    button_style: section.settings.button_style,
+    button_icon: section.settings.button_icon,
+    button_label: section.settings.button_label
+  -%}
+  <div class="grid-banner{% if section.settings.enable_swiper_mobile %} swipe-mobile{% endif %}">
+    <div
+      class="grid-banner__inner f-grid f-grid--gap-{{ section.settings.gap }} f-grid-auto-rows--{{ section.settings.banner_height }} f-grid--row-gap-{{ section.settings.gap }}{% if section.settings.enable_swiper_mobile %} swipe-mobile__inner{% endif %}"
+      style="--f-columns-md: 2;--f-columns-lg: {{ section.settings.columns }};"
+    >
+      {%- for block in section.blocks -%}
+        <div
+          class="f-column grid-banner__item w-full {{ block.settings.block_custom_class }}"
+          style="--cell-c-span: {{ block.settings.column_span }};--cell-r-span: {{ block.settings.row_span }};"
+        >
+          {%- render 'card-image',
+            parent_color_scheme: section.settings.color_scheme,
+            color_scheme: block.settings.color_scheme,
+            link: block.settings.card_link,
+            image: block.settings.image,
+            image_mobile: block.settings.image_mobile,
+            image_ratio: 'adapt',
+            image_overlay_opacity: block.settings.image_overlay_opacity,
+            heading: block.settings.heading,
+            highlight_style: block.settings.highlight_style,
+            highlight_font_style: block.settings.highlight_font_style,
+            highlight_style_color: block.settings.highlight_style_color,
+            highlight_text_color: block.settings.highlight_text_color,
+            heading_size: block.settings.heading_size,
+            subheading: block.settings.subheading,
+            subheading_style: block.settings.subheading_style,
+            description: block.settings.text,
+            description_size: block.settings.text_size,
+            button_label: block.settings.button_label,
+            button_style: block.settings.button_style,
+            button_icon: block.settings.button_icon,
+            button_size: block.settings.button_size,
+            rich_text_size: block.settings.content_gap,
+            content_spacing: block.settings.content_spacing,
+            content_position: block.settings.content_position,
+            content_position_mobile: block.settings.content_position_mobile,
+            content_alignment: block.settings.content_alignment,
+            content_alignment_mobile: block.settings.content_alignment_mobile,
+            enable_preload_image: block.settings.enable_preload_image,
+            section_index: section.index,
+            forloop_index: forloop.index,
+            heading_size_custom: block.settings.heading_size_custom,
+            heading_size_mobile: block.settings.heading_size_mobile
+          -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Grid banner",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "select",
+      "id": "section_header_alignment",
+      "label": "Text alignment",
+      "default": "center",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "section_header_alignment_mobile",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Grid banner",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h2",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "description_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "default": "btn--primary",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "default": "none",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Grid settings"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Number of columns on desktop",
+      "min": 4,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "banner_height",
+      "label": "Banner height",
+      "default": "auto",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "gap",
+      "label": "Column gap",
+      "default": "2xs",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_swiper_mobile",
+      "label": "Enable swipe on mobile",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "label": "Show divider",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "label": "Divider width",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 80
+    }
+  ],
+  "blocks": [
+    {
+      "type": "banner-card",
+      "name": "Banner card",
+      "settings": [
+        {
+          "type": "header",
+          "content": "General"
+        },
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image_mobile",
+          "label": "Mobile image"
+        },
+        {
+          "type": "range",
+          "id": "image_overlay_opacity",
+          "label": "Image overlay opacity",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 5,
+          "default": 0
+        },
+        {
+          "type": "header",
+          "content": "Banner size"
+        },
+        {
+          "type": "range",
+          "id": "column_span",
+          "label": "Column span",
+          "min": 1,
+          "max": 6,
+          "step": 1,
+          "default": 1
+        },
+        {
+          "type": "range",
+          "id": "row_span",
+          "label": "Row span",
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "default": 1
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "select",
+          "id": "content_spacing",
+          "label": "Content spacing",
+          "default": "medium",
+          "options": [
+            {
+              "value": "extra-small",
+              "label": "Extra small"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_gap",
+          "label": "Content gap",
+          "default": "standard",
+          "options": [
+            {
+              "value": "tight",
+              "label": "Extra small"
+            },
+            {
+              "value": "fitted",
+              "label": "Small"
+            },
+            {
+              "value": "standard",
+              "label": "Medium"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Content position",
+          "options": [
+            {
+              "group": "Standard",
+              "label": "Top left",
+              "value": "top-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Top center",
+              "value": "top-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Top right",
+              "value": "top-right"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle left",
+              "value": "middle-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle center",
+              "value": "middle-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle right",
+              "value": "middle-right"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom left",
+              "value": "bottom-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom center",
+              "value": "bottom-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom right",
+              "value": "bottom-right"
+            },
+            {
+              "group": "Split",
+              "label": "Middle content",
+              "value": "split-middle-content"
+            },
+            {
+              "group": "Split",
+              "label": "Bottom button",
+              "value": "split-bottom-button"
+            },
+            {
+              "group": "Split",
+              "label": "Top subheading",
+              "value": "split-top-subheading"
+            }
+          ],
+          "default": "bottom-center"
+        },
+        {
+          "type": "select",
+          "id": "content_alignment",
+          "label": "Content alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_position_mobile",
+          "label": "Mobile content position",
+          "default": "middle-center",
+          "options": [
+            {
+              "value": "top-center",
+              "label": "Top"
+            },
+            {
+              "value": "middle-center",
+              "label": "Middle"
+            },
+            {
+              "value": "bottom-center",
+              "label": "Bottom"
+            }
+          ],
+          "visible_if": "{{ block.settings.content_position != 'split-middle-content' and block.settings.content_position != 'split-bottom-button' and block.settings.content_position != 'split-top-subheading' }}"
+        },
+        {
+          "type": "select",
+          "id": "content_alignment_mobile",
+          "label": "Mobile content alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "url",
+          "id": "card_link",
+          "label": "Card link"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "select",
+          "id": "subheading_style",
+          "label": "Subheading style",
+          "default": "",
+          "options": [
+            {
+              "value": "",
+              "label": "None"
+            },
+            {
+              "value": "border",
+              "label": "With border"
+            },
+            {
+              "value": "thick-border",
+              "label": "With thick border"
+            }
+          ]
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "default": "Image card",
+          "label": "Heading",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "select",
+          "id": "heading_size_mobile",
+          "label": "Heading size on mobile",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Inherit"
+            },
+            {
+              "value": "custom",
+              "label": "Custom"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "range",
+          "id": "heading_size_custom",
+          "label": "Custom size",
+          "min": 12,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 18,
+          "visible_if": "{{ block.settings.heading_size_mobile == 'custom' }}"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--primary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "select",
+          "id": "button_size",
+          "label": "Button size",
+          "options": [
+            {
+              "value": "btn--small",
+              "label": "Small"
+            },
+            {
+              "value": "btn--medium",
+              "label": "Medium"
+            },
+            {
+              "value": "btn--large",
+              "label": "Large"
+            }
+          ],
+          "default": "btn--medium"
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        },
+        {
+          "type": "header",
+          "content": "Advanced"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_preload_image",
+          "label": "Enable preload image",
+          "info": "If this section is visible when the page loads, enabling this setting can reduce LCP and may improve site speed scores."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Grid banner",
+      "blocks": [
+        {
+          "type": "banner-card",
+          "settings": {
+            "column_span": 2,
+            "row_span": 2,
+            "content_position": "bottom-left",
+            "content_alignment": "left",
+            "subheading": "Add a tag line",
+            "button_label": "Button label",
+            "heading_size": "hd2"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "content_position": "top-center",
+            "row_span": 2,
+            "heading_size": "h2"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "heading_size": "h4"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "heading_size": "h4"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Grid banner even",
+      "settings": {
+        "columns": 6,
+        "banner_height": "medium"
+      },
+      "blocks": [
+        {
+          "type": "banner-card",
+          "settings": {
+            "column_span": 4,
+            "row_span": 2,
+            "content_position": "middle-left",
+            "content_alignment": "left",
+            "subheading": "Add a tag line",
+            "button_label": "Button label",
+            "heading_size": "hd2"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "column_span": 2,
+            "heading_size": "h2"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "column_span": 2,
+            "heading_size": "h2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Grid banner stacked",
+      "blocks": [
+        {
+          "type": "banner-card",
+          "settings": {
+            "column_span": 1,
+            "row_span": 2,
+            "content_position": "top-center",
+            "heading_size": "h2"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "column_span": 2,
+            "row_span": 2,
+            "content_position": "middle-center",
+            "content_alignment": "center",
+            "subheading": "Add a tag line",
+            "button_label": "Button label",
+            "heading_size": "hd2"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "heading_size": "h4"
+          }
+        },
+        {
+          "type": "banner-card",
+          "settings": {
+            "heading_size": "h4"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,689 @@
+{{ 'section-favorite-products.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'favorite-products.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign enable_slider = false
+  if section.blocks.size > 1
+    assign enable_slider = true
+  endif
+
+  assign first_block = section.blocks.first
+  assign aspect_ratio = first_block.settings.image.aspect_ratio | default: 1
+  assign aspect_ratio_mobile = first_block.settings.image_mobile.aspect_ratio | default: 0.75
+
+  assign slide_height = section.settings.slide_height
+  assign layout = section.settings.layout
+  assign pagination_type = 'fraction'
+
+  assign pcard_style = section.settings.pcard_style
+-%}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div
+  class="section section-{{ section.id }} section-favorite-products{% if enable_slider %} slider-enabled{% endif %} color-{{ section.settings.color_scheme }}"
+  data-id="{{ section.id }}"
+>
+  <favorite-products
+    class="favorite-products favorite-products--layout-{{ layout }} favorite-products--height-{{ slide_height }} block md:flex flex-nowrap overflow-hidden"
+    data-items="{{ section.blocks.size }}"
+    data-section-id="{{ section.id }}"
+    data-enable-slider="{{ enable_slider }}"
+    data-pagination-type="{{ pagination_type }}"
+    data-pagination-type-mobile="fraction"
+    data-layout="{{ layout }}"
+  >
+    <div class="favorite-products__products swiper swiper-equal-height">
+      <div class="swiper-wrapper{% if layout == 'content-left' %} color-{{ settings.pcard_color_scheme }}{% endif %}">
+        {%- for block in section.blocks -%}
+          {% liquid
+            assign product = block.settings.product
+            assign background_default = block.settings.image
+            assign background_mobile = block.settings.image_mobile
+
+            assign loading = 'lazy'
+            assign fetchpriority = 'low'
+            if forloop.index == 1 and section.index < 2
+              assign loading = 'eager'
+              assign fetchpriority = 'high'
+            endif
+          %}
+          <div class="swiper-slide" data-index="{{ forloop.index0 }}">
+            <div class="favorite-product grid grid-cols-1 h-full">
+              <div
+                class="favorite-product__bg h-full col-span-full row-span-full{% if layout == 'content-left' %} block md:hidden{% endif %}"
+                style="{% if slide_height == 'adapt' %}--aspect-ratio: {{ aspect_ratio }};{% endif %}--aspect-ratio-mobile: {{ aspect_ratio_mobile }};"
+              >
+                {%- if background_default == blank -%}
+                  <motion-element
+                    data-motion="zoom-out-sm"
+                    class="h-full{% if background_mobile != blank %} hidden md:block{% else %} block{% endif %}"
+                  >
+                    {% capture current %}{% cycle 1, 2 %}{% endcapture %}
+                    {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                  </motion-element>
+                {%- endif -%}
+                {%- if background_default != blank or background_mobile != blank -%}
+                  <motion-element
+                    class="w-full h-full block{% if background_default == blank %} md:hidden{% endif %}"
+                    data-motion="zoom-out-sm"
+                  >
+                    <picture class="media media-wrapper block w-full h-full">
+                      {%- if background_default != blank and background_mobile != blank -%}
+                        <source
+                          media="(max-width: 767px)"
+                          srcset="{{ background_mobile | image_url: width: '400x' }} 400w, {{ background_mobile | image_url: width: '600x' }} 600w, {{ background_mobile | image_url: width: '800x' }} 800w, {{ background_mobile | image_url: width: '1000x' }} 1000w"
+                          width="{{ background_mobile.width }}"
+                          height="{{ background_mobile.height }}"
+                        >
+                      {%- endif -%}
+                      {%- liquid
+                        if background_default == blank
+                          assign background_default = background_mobile
+                        endif
+
+                        assign background_default_height = background_default.width | divided_by: background_default.aspect_ratio
+                        assign background_default_alt = background_default.alt | default: shop.name | escape
+                      -%}
+                      {{-
+                        background_default
+                        | image_url: width: 2000
+                        | image_tag:
+                          loading: loading,
+                          width: background_default.width,
+                          height: background_default_height,
+                          alt: background_default_alt,
+                          fetchpriority: fetchpriority,
+                          sizes: '100vw',
+                          widths: '375, 420, 750, 840, 1100, 1500, 1780, 2000',
+                          is: 'image-lazy',
+                          class: 'motion-reduce w-full h-full'
+                      -}}
+                    </picture>
+                  </motion-element>
+                {%- endif -%}
+              </div>
+
+              <div class="favorite-product__product flex items-center justify-center relative col-span-full row-span-full">
+                {%- if product != blank -%}
+                  {% if pcard_style == 'boxed' %}
+                    {% render 'card-product-boxed',
+                      product: product,
+                      list_on_mobile: false,
+                      image_ratio: section.settings.pcard_image_ratio,
+                      image_sizes: '450px',
+                      quick_view_suffix: block.id,
+                      section_index: section.index,
+                      index: forloop.index
+                    %}
+                  {%- else -%}
+                    {%- render 'card-product',
+                      product: product,
+                      pcard_style: pcard_style,
+                      image_sizes: '450px',
+                      image_ratio: section.settings.pcard_image_ratio,
+                      color_inherit: false,
+                      section_index: section.index,
+                      index: forloop.index
+                    -%}
+                  {% endif %}
+                {%- else -%}
+                  {%- capture pcard_placeholder_class -%}
+                    text-{{ settings.pcard_content_alignment }} color-{{ settings.pcard_color_scheme }}
+                  {%- endcapture -%}
+
+                  {% if pcard_style == 'boxed' %}
+                    {% render 'card-product-placeholder',
+                      image_ratio: section.settings.pcard_image_ratio,
+                      pcard_style: 'boxed',
+                      custom_class: pcard_placeholder_class
+                    %}
+                  {%- else -%}
+                    {% render 'card-product-placeholder',
+                      image_ratio: section.settings.pcard_image_ratio,
+                      color_inherit: false
+                    %}
+                  {% endif %}
+                {%- endif -%}
+              </div>
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+    <div class="favorite-products__testimonials relative flex flex-col justify-center gap-y-6 lg:gap-y-10 color-{{ first_block.settings.color_scheme }}">
+      {% assign motion_delay = 50 %}
+      {% if section.settings.heading != blank %}
+        <h2 class="section__heading text-subheading">
+          <motion-element class="block" data-motion="fade-up" data-motion-delay="{{ motion_delay }}">
+            {% render 'highlight-text',
+              hl_text: section.settings.heading,
+              hl_style: section.settings.highlight_style,
+              hl_font_style: section.settings.highlight_font_style,
+              hl_style_color: section.settings.highlight_style_color,
+              hl_text_color: section.settings.highlight_text_color
+            %}
+          </motion-element>
+        </h2>
+        {%- assign motion_delay = motion_delay | plus: 50 -%}
+      {% endif %}
+      <motion-element class="swiper block" data-motion="fade-up" data-motion-delay="{{ motion_delay }}">
+        <div class="swiper-wrapper">
+          {%- for block in section.blocks -%}
+            {% liquid
+              assign text = block.settings.text
+              assign author = block.settings.author
+              assign bio = block.settings.bio
+            %}
+            <div
+              class="swiper-slide"
+              data-color-scheme="color-{{ block.settings.color_scheme }}"
+              data-index="{{ forloop.index0 }}"
+              {{ block.shopify_attributes }}
+            >
+              <div class="testimonial">
+                {% if text != blank %}
+                  <div class="testimonial__content {{ block.settings.text_size }} rte">{{ text }}</div>
+                {% endif %}
+                {% if author != blank or bio != blank %}
+                  <div class="testimonial__author flex flex-col gap-y-2">
+                    {% if author != blank %}
+                      <h3 class="testimonial__name h5">{{ author }}</h3>
+                    {% endif %}
+                    {% if bio != blank %}
+                      <div class="testimonial__bio text-subtext">
+                        <span>{{ bio }}</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {%- endfor -%}
+        </div>
+      </motion-element>
+      {%- assign motion_delay = motion_delay | plus: 50 -%}
+      <motion-element class="block" data-motion="fade-up" data-motion-delay="{{ motion_delay }}">
+        <div class="swiper-controls swiper-controls--grouped swiper-controls--pagination-{{ pagination_type }}">
+          <button
+            class="swiper-button swiper-button--blank swiper-button-prev btn"
+            name="previous"
+            aria-label="{{ 'general.slider.previous_slide' | t }}"
+          >
+            {% render 'icon-caret-left' %}
+          </button>
+          <div class="swiper-pagination"></div>
+          <button
+            class="swiper-button swiper-button--blank swiper-button-next btn"
+            name="next"
+            aria-label="{{ 'general.slider.next_slide' | t }}"
+          >
+            {% render 'icon-caret-right' %}
+          </button>
+        </div>
+      </motion-element>
+    </div>
+    <div class="favorite-products__media relative hidden md:block">
+      <div class="swiper swiper-equal-height h-full">
+        <div class="swiper-wrapper">
+          {% liquid
+            assign offset = 0
+            if layout == 'content-right'
+              assign offset = 1
+            endif
+          %}
+          {%- for block in section.blocks offset: offset -%}
+            {% liquid
+              assign product = block.settings.product
+              assign background_default = block.settings.image
+              assign background_mobile = block.settings.image_mobile
+
+              assign loading = 'lazy'
+              assign fetchpriority = 'low'
+            %}
+            <div class="swiper-slide" data-index="{{ forloop.index0 }}">
+              <div
+                class="media overflow-hidden h-full"
+                {% if slide_height == 'adapt' %}
+                  style="--aspect-ratio: {{ aspect_ratio }};--aspect-ratio-mobile: {{ aspect_ratio_mobile }};"
+                {% endif %}
+                data-index="{{ forloop.index0 }}"
+              >
+                {%- if background_default == blank -%}
+                  <motion-element
+                    data-motion="zoom-out-sm"
+                    class="h-full{% if background_mobile != blank %} hidden md:block{% else %} block{% endif %}"
+                  >
+                    {% capture current %}{% cycle 1, 2 %}{% endcapture %}
+                    {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                  </motion-element>
+                {%- endif -%}
+                {%- if background_default != blank or background_mobile != blank -%}
+                  <motion-element
+                    class="w-full h-full block{% if background_default == blank %} md:hidden{% endif %}"
+                    data-motion="zoom-out-sm"
+                  >
+                    <picture class="media-wrapper block w-full h-full">
+                      {%- if background_default != blank and background_mobile != blank -%}
+                        <source
+                          media="(max-width: 767px)"
+                          srcset="{{ background_mobile | image_url: width: '400x' }} 400w, {{ background_mobile | image_url: width: '600x' }} 600w, {{ background_mobile | image_url: width: '800x' }} 800w, {{ background_mobile | image_url: width: '1000x' }} 1000w"
+                          width="{{ background_mobile.width }}"
+                          height="{{ background_mobile.height }}"
+                        >
+                      {%- endif -%}
+                      {%- liquid
+                        if background_default == blank
+                          assign background_default = background_mobile
+                        endif
+
+                        assign background_default_height = background_default.width | divided_by: background_default.aspect_ratio
+                        assign background_default_alt = background_default.alt | default: shop.name | escape
+                      -%}
+                      {{-
+                        background_default
+                        | image_url: width: 2000
+                        | image_tag:
+                          loading: loading,
+                          width: background_default.width,
+                          height: background_default_height,
+                          alt: background_default_alt,
+                          fetchpriority: fetchpriority,
+                          sizes: '100vw',
+                          widths: '375, 420, 750, 840, 1100, 1500, 1780, 2000',
+                          is: 'image-lazy',
+                          class: 'motion-reduce w-full h-full'
+                      -}}
+                    </picture>
+                  </motion-element>
+                {%- endif -%}
+              </div>
+            </div>
+          {%- endfor -%}
+          {% if first_block and layout == 'content-right' %}
+            {% liquid
+              assign product = first_block.settings.product
+              assign background_default = first_block.settings.image
+              assign background_mobile = first_block.settings.image_mobile
+
+              assign loading = 'lazy'
+              assign fetchpriority = 'low'
+            %}
+            <div class="swiper-slide" data-index="{{ section.blocks.size | minus: 1 }}">
+              <div
+                class="media overflow-hidden h-full"
+                {% if slide_height == 'adapt' %}
+                  style="--aspect-ratio: {{ aspect_ratio }};--aspect-ratio-mobile: {{ aspect_ratio_mobile }};"
+                {% endif %}
+                data-index="{{ section.blocks.size | minus: 1 }}"
+              >
+                {%- if background_default == blank -%}
+                  <motion-element
+                    data-motion="zoom-out-sm"
+                    class="h-full{% if background_mobile != blank %} hidden md:block{% else %} block{% endif %}"
+                  >
+                    {% capture current %}{% cycle 1, 2 %}{% endcapture %}
+                    {{ 'lifestyle-' | append: current | placeholder_svg_tag: 'placeholder-svg w-full h-full' }}
+                  </motion-element>
+                {%- endif -%}
+                {%- if background_default != blank or background_mobile != blank -%}
+                  <motion-element
+                    class="w-full h-full block{% if background_default == blank %} md:hidden{% endif %}"
+                    data-motion="zoom-out-sm"
+                  >
+                    <picture class="media-wrapper block w-full h-full">
+                      {%- if background_default != blank and background_mobile != blank -%}
+                        <source
+                          media="(max-width: 767px)"
+                          srcset="{{ background_mobile | image_url: width: '400x' }} 400w, {{ background_mobile | image_url: width: '600x' }} 600w, {{ background_mobile | image_url: width: '800x' }} 800w, {{ background_mobile | image_url: width: '1000x' }} 1000w"
+                          width="{{ background_mobile.width }}"
+                          height="{{ background_mobile.height }}"
+                        >
+                      {%- endif -%}
+                      {%- liquid
+                        if background_default == blank
+                          assign background_default = background_mobile
+                        endif
+
+                        assign background_default_height = background_default.width | divided_by: background_default.aspect_ratio
+                        assign background_default_alt = background_default.alt | default: shop.name | escape
+                      -%}
+                      {{-
+                        background_default
+                        | image_url: width: 2000
+                        | image_tag:
+                          loading: loading,
+                          width: background_default.width,
+                          height: background_default_height,
+                          alt: background_default_alt,
+                          fetchpriority: fetchpriority,
+                          sizes: '100vw',
+                          widths: '375, 420, 750, 840, 1100, 1500, 1780, 2000',
+                          is: 'image-lazy',
+                          class: 'motion-reduce w-full h-full'
+                      -}}
+                    </picture>
+                  </motion-element>
+                {%- endif -%}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </favorite-products>
+</div>
+{% schema %}
+{
+  "name": "Favorite products",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "default": "content-right",
+      "options": [
+        {
+          "value": "content-right",
+          "label": "Content right"
+        },
+        {
+          "value": "content-left",
+          "label": "Content left"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Favorite products",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "header",
+      "content": "Slider settings"
+    },
+    {
+      "type": "select",
+      "id": "slide_height",
+      "label": "Desktop height",
+      "info": "The height of the slider will adapt to the first image on desktop.",
+      "default": "medium",
+      "options": [
+        {
+          "label": "Adapt to first image",
+          "value": "adapt"
+        },
+        {
+          "label": "Small",
+          "value": "small"
+        },
+        {
+          "label": "Medium",
+          "value": "medium"
+        },
+        {
+          "label": "Large",
+          "value": "large"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Product cards"
+    },
+    {
+      "type": "select",
+      "id": "pcard_style",
+      "options": [
+        {
+          "value": "boxed",
+          "label": "Boxed"
+        },
+        {
+          "value": "card",
+          "label": "Card"
+        }
+      ],
+      "default": "boxed",
+      "label": "Style"
+    },
+    {
+      "type": "select",
+      "id": "pcard_image_ratio",
+      "label": "Image ratio",
+      "default": "",
+      "options": [
+        {
+          "value": "",
+          "label": "Use global settings"
+        },
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "1/1",
+          "label": "Square (1:1)"
+        },
+        {
+          "value": "3/4",
+          "label": "Portrait (3:4)"
+        },
+        {
+          "value": "4/3",
+          "label": "Landscape (4:3)"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "header",
+          "content": "Product"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image_mobile",
+          "label": "Mobile image"
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "default": "<p>Add customer reviews and testimonials to showcase your store\u2019s happy customers.</p>",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "default": "Author's name",
+          "label": "Author"
+        },
+        {
+          "type": "text",
+          "id": "bio",
+          "label": "Bio"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Favorite products",
+      "blocks": [
+        {
+          "type": "product"
+        },
+        {
+          "type": "product"
+        },
+        {
+          "type": "product"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

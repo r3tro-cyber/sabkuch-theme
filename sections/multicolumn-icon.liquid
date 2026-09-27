@@ -1,0 +1,1266 @@
+{{ 'component-multicolumn-card.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign columns_mobile_int = section.settings.columns_mobile | plus: 0
+  assign enable_swipe_mobile = false
+  assign image_position = section.settings.image_position
+  if section.settings.swipe_on_mobile and section.blocks.size > columns_mobile_int
+    assign enable_swipe_mobile = true
+  endif
+  assign columns_desktop = section.settings.columns_desktop
+  assign columns_tablet = columns_desktop
+  if columns_desktop > 3
+    assign columns_tablet = columns_desktop | divided_by: 2.0 | ceil
+  endif
+
+  assign header_alignment = section.settings.section_header_alignment
+  assign header_alignment_mobile = section.settings.section_header_alignment_mobile
+  if header_alignment_mobile == 'inherit'
+    assign header_alignment_mobile = header_alignment
+  endif
+
+  assign color_scheme_inherit = false
+  if section.settings.card_color_scheme == section.settings.color_scheme
+    assign color_scheme_inherit = true
+  endif
+
+  assign header_layout = section.settings.header_layout
+  assign side_button = true
+  assign f_columns_lg = columns_desktop
+  assign f_columns_xl = columns_desktop
+  assign auto_layout_tablet = false
+  if header_layout == 'standing-column'
+    assign heading_layout = 'vertical'
+    assign side_button = false
+    if columns_desktop > 3
+      assign f_columns_lg = 2
+      assign auto_layout_tablet = true
+    else
+      assign f_columns_lg = columns_desktop
+    endif
+  endif
+  assign custom_css_class = 'sticky-element-laptop'
+  if section.settings.enable_sticky
+    assign custom_css_class = custom_css_class | append: ' sticky-element'
+  endif
+-%}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+{% style %}
+  .section-{{ section.id }} {
+    --section-padding-top: {{ section.settings.padding_top }}px;
+    --section-padding-bottom: {{ section.settings.padding_bottom }}px;
+    --f-columns-mobile: {{ columns_mobile_int }};
+    --f-columns-md: {{ columns_tablet }};
+    --f-columns-lg: {{ f_columns_lg }};
+    --f-columns-xl: {{ f_columns_xl }};
+    --icon-color: {{ section.settings.icon_color }};
+  }
+{% endstyle %}
+
+<div class="section section-{{ section.id }} section--padding multicolumn-icon section-header-{{ header_layout }} color-{{ section.settings.color_scheme }}{% if columns_desktop > 3  %} section-auto-layout{% endif %}">
+  <div class="section__container page-width page-width--{{ section.settings.container }}{% unless section.settings.enable_sticky %} md:items-center{% endunless %}">
+    <div class="section__heading">
+      {% render 'section-heading',
+        section_settings: section.settings,
+        header_layout: heading_layout,
+        button_label: section.settings.button_label,
+        button_link: section.settings.button_link,
+        button_style: section.settings.button_style,
+        button_icon: section.settings.button_icon,
+        button_visible: true,
+        side_button: side_button,
+        custom_css_class: custom_css_class
+      %}
+    </div>
+    <multicolumn-icon
+      class="section__content block f-grid--gap-{{ section.settings.column_gap }} f-grid--row-gap-{{ section.settings.row_gap }}{% if enable_swipe_mobile %} swipe-mobile swipe-mobile--{{ section.settings.columns_mobile }}-cols{% endif %}"
+      data-section-id="{{ section.id }}"
+    >
+      <div class="multicolumn__items f-grid{% if enable_swipe_mobile %} swipe-mobile__inner{% endif %}">
+        {%- for block in section.blocks -%}
+          <div
+            class="f-column relative multicolumn-card-wrapper{% if color_scheme_inherit %} color-scheme-inherit{% endif %}"
+            {{ block.shopify_attributes }}
+            data-index="{{ forloop.index0 }}"
+          >
+            <div
+              class="multicolumn-card multicolumn-card--image-icon multicolumn-card--layout-{{ section.settings.image_position }} flex gap-x-3 {% if image_position == 'top' %} items-{{ section.settings.content_alignment | replace: 'left', 'start' | replace: 'right', 'end' }}{% if auto_layout_tablet %} flex-col lg:flex-row xl:flex-col{% else %} flex-col{% endif %}{% endif %} text-{{ section.settings.content_alignment }} color-{{ section.settings.card_color_scheme }}{% if color_scheme_inherit %} color-scheme-inherit{% else %} blocks-radius{% endif %} h-full"
+              style="--img-max: {{ block.settings.max_width }}px;--img-max-mb: {{ block.settings.max_width_mb }}px;"
+            >
+              <div class="multicolumn-card__image shrink-0">
+                <motion-element
+                  class="block w-full h-full"
+                  data-motion="zoom-out-sm"
+                  style="--aspect-ratio: {{ block.settings.image.aspect_ratio | default: '1' }};"
+                >
+                  {%- if block.settings.image != blank -%}
+                    {%- liquid
+                      assign alt = block.settings.image.alt | default: block.settings.title | escape
+                    -%}
+                    {%- capture image_sizes -%}(min-width: 768px) {{ block.settings.max_width }}px, {{ block.settings.max_width_mb }}px{%- endcapture -%}
+                    <picture class="card-media__media media-wrapper">
+                      {{
+                        block.settings.image
+                        | image_url: width: 1100
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'motion-reduce absolute inset-0 w-full h-full',
+                          widths: '40, 60, 80, 120, 165, 360, 535, 750, 940, 1100',
+                          is: 'image-lazy',
+                          sizes: image_sizes,
+                          alt: alt
+                      }}
+                    </picture>
+                  {%- elsif block.settings.icon != 'none' -%}
+                    {%- render 'icons', icon: block.settings.icon -%}
+                  {%- else -%}
+                    {{ 'image' | placeholder_svg_tag: 'placeholder-svg blocks-radius-sm' }}
+                  {%- endif -%}
+                </motion-element>
+              </div>
+              <div class="multicolumn-card__info rich-text rich-text--tight flex-1 flex flex-col items-{{ section.settings.content_alignment | replace: 'left', 'start' | replace: 'right', 'end' }}">
+                {%- if block.settings.title != blank -%}
+                  <h3 class="multicolumn-card__title rich-text__heading font-{{ block.settings.heading_font }} {{ block.settings.heading_size }}">
+                    {% render 'highlight-text',
+                      hl_text: block.settings.title,
+                      hl_style: block.settings.highlight_style,
+                      hl_font_style: block.settings.highlight_font_style,
+                      hl_style_color: block.settings.highlight_style_color,
+                      hl_text_color: block.settings.highlight_text_color
+                    %}
+                  </h3>
+                {%- endif -%}
+                {%- if block.settings.text != blank -%}
+                  <div class="multicolumn-card__text rich-text__text rte {{ block.settings.text_size }} text-subtext">
+                    {{ block.settings.text }}
+                  </div>
+                {%- endif -%}
+                {%- if block.settings.button_label != blank -%}
+                  <div class="multicolumn-card__button{% unless color_scheme_inherit %} flex-1 flex items-end{% endunless %}">
+                    {% render 'button',
+                      button_style: block.settings.button_style,
+                      button_link: block.settings.button_link,
+                      button_label: block.settings.button_label,
+                      button_icon: block.settings.button_icon
+                    %}
+                  </div>
+                {%- endif -%}
+              </div>
+            </div>
+            {% if section.settings.show_divider_col %}
+              {% liquid
+                assign divider_desktop = forloop.index | modulo: f_columns_xl
+                assign divider_laptop = forloop.index | modulo: f_columns_lg
+                assign divider_tablet = forloop.index | modulo: columns_tablet
+                assign divider_mobile = forloop.index | modulo: columns_mobile_int
+
+                assign class = ''
+                if divider_desktop == 0
+                  assign class = class | append: ' hidden--desktop'
+                endif
+                if divider_laptop == 0
+                  assign class = class | append: ' hidden--laptop'
+                endif
+                if divider_tablet == 0
+                  assign class = class | append: ' hidden--tablet'
+                endif
+                if divider_mobile == 0
+                  assign class = class | append: ' hidden--mobile'
+                endif
+              %}
+              <div class="multicolumn-card__divider no-empty{{ class }}"></div>
+            {% endif %}
+          </div>
+        {%- endfor -%}
+      </div>
+    </multicolumn-icon>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Multicolumn with icon",
+  "class": "section",
+  "tag": "section",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "select",
+      "id": "header_layout",
+      "label": "Layout",
+      "default": "vertical",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "standing-column",
+          "label": "Standing column"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Multicolumn with icon",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--underline"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky",
+      "label": "Enable sticky columns on desktop",
+      "default": false,
+      "visible_if": "{{ section.settings.header_layout == 'standing-column' }}"
+    },
+    {
+      "type": "header",
+      "content": "Card settings"
+    },
+    {
+      "type": "color_scheme",
+      "id": "card_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Content alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "Image position",
+      "default": "left",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "default": "#1D349A",
+      "label": "Icon color"
+    },
+    {
+      "type": "header",
+      "content": "Grid settings"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4,
+      "label": "Number of columns on desktop"
+    },
+    {
+      "type": "select",
+      "id": "column_gap",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "large",
+      "label": "Column gap"
+    },
+    {
+      "type": "select",
+      "id": "row_gap",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Same as the column gap"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "inherit",
+      "label": "Row gap"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_divider_col",
+      "label": "Show divider between columns",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Number of columns on mobile",
+      "options": [
+        {
+          "value": "1",
+          "label": "1 column"
+        },
+        {
+          "value": "2",
+          "label": "2 columns"
+        },
+        {
+          "value": "3",
+          "label": "3 columns"
+        }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "checkbox",
+      "id": "swipe_on_mobile",
+      "default": false,
+      "label": "Enable swipe on mobile"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    }
+  ],
+  "blocks": [
+    {
+      "type": "column",
+      "name": "Column",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ],
+          "default": "chat"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "range",
+          "id": "max_width",
+          "min": 10,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "label": "Maximum width",
+          "default": 28
+        },
+        {
+          "type": "range",
+          "id": "max_width_mb",
+          "min": 10,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "label": "Maximum width mobile",
+          "default": 28
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "title",
+          "default": "Column",
+          "label": "Heading",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h6",
+          "options": [
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "h6",
+              "label": "Heading - Extra extra small"
+            },
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "heading_font",
+          "default": "heading",
+          "label": "Font family",
+          "options": [
+            {
+              "value": "body-bolder",
+              "label": "Body font"
+            },
+            {
+              "value": "heading",
+              "label": "Headings font"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "default": "<p>Use this section to explain a set of product features, to link to a series of pages, or to answer common questions about your products.</p>",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--underline"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Multicolumn with icon",
+      "blocks": [
+        {
+          "type": "column",
+          "settings": {
+            "icon": "chat"
+          }
+        },
+        {
+          "type": "column",
+          "settings": {
+            "icon": "phone"
+          }
+        },
+        {
+          "type": "column",
+          "settings": {
+            "icon": "paperplane"
+          }
+        },
+        {
+          "type": "column",
+          "settings": {
+            "icon": "map-pin"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

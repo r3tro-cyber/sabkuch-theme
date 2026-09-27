@@ -1,0 +1,268 @@
+{{ 'section-highlight-text-image.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'highlight-text-image.js' | asset_url }}" defer="defer"></script>
+{% liquid
+  for i in (1..3)
+    capture current
+      cycle 1, 2
+    endcapture
+  endfor
+  assign placeholder_image = 'lifestyle-' | append: current
+%}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div
+  class="section section-{{ section.id }} section--padding highlight-text-with-image color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="page-width">
+    <motion-element class="block" data-motion="fade-up">
+      <highlight-text-image
+        data-section-id="{{ section.id }}"
+        class="text {{ section.settings.heading_size }} flex flex-wrap items-center justify-{{ section.settings.alignment | replace: 'left', 'start' | replace: 'right', 'end' }}"
+      >
+        {{ section.settings.text }}
+      </highlight-text-image>
+    </motion-element>
+  </div>
+  <template>
+    {%- for block in section.blocks -%}
+      <div data-id="img{{ forloop.index }}">
+        {% liquid
+          assign alt_image = block.settings.image.alt | default: section.settings.text | escape
+        %}
+        <a
+          {% if block.settings.image_link != blank %}
+            href="{{ block.settings.image_link }}"
+          {% else %}
+            role="link"
+            aria-disabled="true"
+          {% endif %}
+          style="--image-width:{{ block.settings.image_width }}px; --image-width-mobile:{{ block.settings.image_width_mobile }}px;"
+          class="media-wrapper blocks-radius focus-inset overflow-hidden hover-wrapper"
+          aria-label="{{ alt_image }}"
+          {{ block.shopify_attributes }}
+        >
+          <motion-element class="flex h-full w-full" data-motion="zoom-out">
+            {% if block.settings.image != blank %}
+              {{
+                block.settings.image
+                | image_url: width: 300
+                | image_tag:
+                  loading: 'lazy',
+                  class: 'motion-reduce hover-scale-up blocks-radius',
+                  widths: '100,200,300,400',
+                  is: 'image-lazy'
+              }}
+            {% else %}
+              {{ placeholder_image | placeholder_svg_tag: 'placeholder-svg' }}
+            {% endif %}
+          </motion-element>
+        </a>
+      </div>
+    {%- endfor -%}
+  </template>
+</div>
+{% schema %}
+{
+  "name": "Highlight text with image",
+  "tag": "section",
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Text"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Heading",
+      "default": "Highlight products, [img1] a collection, or [img2] images alongside a brand message [img3]",
+      "info": "Use a specific placeholder format `[imgX]` where you want the image to appear. X is the image index. For example: `[img1]` will be replaced by the first image."
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "hd1",
+      "options": [
+        {
+          "value": "h6",
+          "label": "Heading - Extra extra small"
+        },
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center",
+      "label": "Text alignment"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "image",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "url",
+          "id": "image_link",
+          "label": "Link"
+        },
+        {
+          "type": "range",
+          "id": "image_width",
+          "min": 50,
+          "max": 250,
+          "step": 2,
+          "unit": "px",
+          "label": "Desktop image width",
+          "default": 220
+        },
+        {
+          "type": "range",
+          "id": "image_width_mobile",
+          "min": 50,
+          "max": 150,
+          "step": 2,
+          "unit": "px",
+          "label": "Mobile image width",
+          "default": 110
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Highlight text with image",
+      "blocks": [
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

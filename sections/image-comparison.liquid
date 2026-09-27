@@ -1,0 +1,805 @@
+{{ 'section-image-comparison.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'image-comparison.js' | asset_url }}" defer="defer"></script>
+{%- liquid
+  assign image_height = section.settings.image_height
+
+  if image_height == 'adapt'
+    assign first_block = section.blocks.first
+    assign aspect_ratio = first_block.settings.image.aspect_ratio | default: 2.333
+    assign aspect_ratio_mobile = first_block.settings.image_mobile.aspect_ratio | default: 1.778
+  endif
+
+  assign image_position = 'right'
+
+  assign image_blocks = section.blocks | where: 'type', 'image'
+  assign text_blocks = section.blocks | where: 'type', 'text'
+  assign text_blocks_size = text_blocks.size
+-%}
+{%- capture image_desktop_sizes -%}
+(max-width: 767px) calc(100vw - 30px), min({{ settings.page_width }}px, 100vw)
+{%- endcapture -%}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div
+  class="section section-{{ section.id }} section--padding section--image-comparison{% if text_blocks_size > 0 %} image-comparison-section--has-sidebar image-comparison-section--image-{{ image_position }}{% endif %} color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  data-id="{{ section.id }}"
+>
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    <div class="section__wrapper{% if text_blocks_size > 0 %} f-grid f-grid--gap-extra-large{% endif %}" style="--f-columns-mobile: 1; --f-columns-lg: 2;">
+      <div class="section__sidebar f-column{% if text_blocks_size > 0 %} flex flex-col justify-center order-last lg:{% if image_position == 'right' %}order-first{%else%}order-last{% endif %}{% endif %}">
+        {% render 'section-heading',
+          section_settings: section.settings,
+          description_size: section.settings.description_size,
+          button_label: section.settings.button_label,
+          button_link: section.settings.button_link,
+          button_style: section.settings.button_style,
+          button_icon: section.settings.button_icon,
+          button_visible: true
+        %}
+
+        {%- for block in text_blocks -%}
+          {% liquid
+            assign heading_color = block.settings.heading_color
+            assign alpha_first = heading_color.alpha | split: '.' | first | plus: 0
+            assign alpha_last = heading_color.alpha | split: '.' | last | plus: 0
+            assign heading_color_inherit = false
+            if alpha_first == 0 and alpha_last == 0
+              assign heading_color_inherit = true
+            endif
+          %}
+          <motion-element class="image-comparison-section__text-block rich-text block md:text-{{ block.settings.text_alignment }} text-{{ block.settings.text_alignment_mobile }}" data-motion="fade-up" data-motion-delay="50">
+            {%- if block.settings.heading != blank -%}
+              <h3 class="rich-text__heading inline-richtext {{ block.settings.heading_size }}"{% unless heading_color_inherit %} style="--color-heading: {{ heading_color.red }}, {{ heading_color.green }}, {{ heading_color.blue }}, {{ heading_color.alpha }};"{% endunless %}>
+                  {{ block.settings.heading }}
+              </h3>
+            {%- endif -%}
+            {%- if block.settings.description != blank -%}
+              <div class="rich-text__text text-subtext rte {{ block.settings.text_size }}">
+                {{ block.settings.description }}
+              </div>
+            {%- endif -%}
+          </motion-element>
+        {% endfor %}
+      </div>
+      <div class="section__content f-column{% if text_blocks_size > 0 %} order-first lg:{% if image_position == 'right' %}order-last{%else%}order-first{% endif %}{% endif %}">
+        <image-comparison
+          class="image-comparison image-comparison__heading-style--{{ section.settings.image_heading_style }} blocks-radius no-js-hidden relative block overflow-hidden"
+          data-direction="{{ section.settings.direction }}"
+        >
+          <span class="image-comparison__animation-trigger"></span>
+          {%- for block in image_blocks limit: 2  -%}
+            {%- liquid
+              assign image = block.settings.image
+              assign image_mobile = block.settings.image_mobile
+              assign heading = block.settings.heading
+
+              assign image_class = 'image-comparison__wrapper image-comparison--' | append: image_height
+              if image_mobile != blank
+                assign image_class = image_class | append: ' has-mobile-image'
+              endif
+            -%}
+            <div class="image-comparison__{% if forloop.index == 1 %}before{% else %}after{% endif %} image-comparison--media">
+              {%- if heading != blank -%}
+                <p class="image-comparison__heading text-sm-extra flex color-{{ block.settings.color_scheme }}">
+                  {{ heading }}
+                </p>
+              {%- endif -%}
+              <div
+                class="{{ image_class }}"
+                {% if image_height == 'adapt' %}
+                  style="--aspect-ratio: {{ aspect_ratio }}; --aspect-ratio-mobile: {{ aspect_ratio_mobile }}"
+                {% endif %}
+              >
+                {%- if image != blank -%}
+                  {{
+                    image
+                    | image_url: width: image.width
+                    | image_tag:
+                      loading: 'lazy',
+                      alt: image.alt,
+                      class: 'motion-reduce image-comparison--image-desktop',
+                      widths: '375, 550, 750, 1100, 1170, 1410, 1500, 2340, 2820',
+                      sizes: image_desktop_sizes,
+                      is: 'image-lazy'
+                  }}
+                {%- else -%}
+                  {{
+                    'lifestyle-'
+                    | append: forloop.index
+                    | placeholder_svg_tag: 'placeholder-svg image-comparison--image-desktop'
+                  }}
+                {%- endif -%}
+                {%- if image_mobile != blank -%}
+                  {{
+                    image_mobile
+                    | image_url: width: image_mobile.width
+                    | image_tag:
+                      loading: 'lazy',
+                      alt: image_mobile.alt,
+                      class: 'motion-reduce image-comparison--image-mobile',
+                      widths: '375, 550, 750, 1500',
+                      sizes: 'calc(100vw - 30px)',
+                      is: 'image-lazy'
+                  }}
+                {%- endif -%}
+              </div>
+            </div>
+          {%- endfor -%}
+          <button class="image-comparison__button" aria-label="image-comparison">
+            <span>
+              <svg
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M11.998 19.4521L11.998 4.54715"/><path d="M6.58008 19.4521L6.58008 4.54715"/><path d="M17.4199 19.4521V4.54715"/>
+              </svg>
+            </span>
+          </button>
+        </image-comparison>
+        <noscript>
+          <div class="alert alert--warning blocks-radius text-center h5">
+            {{ 'onboarding.no_script_alert' | t }}
+          </div>
+        </noscript>
+        {%- if section.settings.product != blank -%}
+          <div class="image-comparison__product flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
+            <a href="{{ section.settings.product.url }}" class="image-comparison__product-title btn--underline">
+              {{- section.settings.product.title -}}
+            </a>
+            {% render 'price', product: section.settings.product %}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Before/after image slider",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "center",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Before/after image slider",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "description_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--primary"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Before/after image settings"
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "Direction",
+      "default": "horizontal",
+      "options": [
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "image_height",
+      "label": "Image height",
+      "default": "adapt",
+      "options": [
+        {
+          "label": "Adapt to image",
+          "value": "adapt"
+        },
+        {
+          "label": "Small",
+          "value": "small"
+        },
+        {
+          "label": "Medium",
+          "value": "medium"
+        },
+        {
+          "label": "Large",
+          "value": "large"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "image_heading_style",
+      "label": "Image heading style",
+      "default": "badge",
+      "options": [
+        {
+          "label": "Badges",
+          "value": "badge"
+        },
+        {
+          "label": "Plain text",
+          "value": "plain"
+        }
+      ]
+    },
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Product"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "image",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "label": "Image",
+          "id": "image"
+        },
+        {
+          "type": "image_picker",
+          "label": "Mobile image",
+          "id": "image_mobile"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Image heading"
+        },
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "limit": 8,
+      "settings": [
+        {
+          "id": "text_alignment",
+          "type": "select",
+          "label": "Text alignment",
+          "default": "left",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "id": "text_alignment_mobile",
+          "type": "select",
+          "label": "Text alignment on mobile",
+          "default": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Inherit"
+            },
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Talk about your brand"
+        },
+        {
+          "type": "color",
+          "id": "heading_color",
+          "label": "Heading color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h2",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Text",
+          "default": "<p>Use this text to share information about your brand with your customers. Describe a product, share announcements, or welcome customers to your store.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "max_blocks": 10,
+  "presets": [
+    {
+      "name": "Before/after image slider",
+      "blocks": [
+        {
+          "type": "image",
+          "settings": {
+            "heading": "Before"
+          }
+        },
+        {
+          "type": "image",
+          "settings": {
+            "heading": "After"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

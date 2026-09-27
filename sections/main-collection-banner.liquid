@@ -1,0 +1,474 @@
+{{ 'section-collection-hero.css' | asset_url | stylesheet_tag: preload: true }}
+{%- liquid
+  if section.settings.image != blank
+    assign banner = section.settings.image
+  endif
+  if section.settings.image_mobile != blank
+    assign banner_mobile = section.settings.image_mobile
+  endif
+
+  if collection.featured_image != blank
+    assign banner = collection.featured_image
+    assign banner_mobile = collection.featured_image
+  endif
+
+  # Override if it set in metafield.
+  if collection.metafields.sabkuchtheme.collection_banner.value != blank
+    assign banner = collection.metafields.sabkuchtheme.collection_banner.value
+    # Inherit from desktop in case has only desktop metafield.
+    assign banner_mobile = banner
+  endif
+
+  if collection.metafields.sabkuchtheme.collection_banner_mobile.value != blank
+    assign banner_mobile = collection.metafields.sabkuchtheme.collection_banner_mobile.value
+  endif
+
+  assign show_collection_image = section.settings.show_collection_image
+  if banner == blank and banner_mobile == blank
+    assign show_collection_image = false
+  endif
+
+  assign image_ratio = banner.aspect_ratio
+  assign image_ratio_mobile = banner_mobile.aspect_ratio | default: image_ratio
+
+  assign image_position = section.settings.image_position
+
+  assign inner_class = 'collection-hero__inner relative f-grid f-grid--gap-none color-' | append: section.settings.color_scheme
+  assign text_class = ''
+
+  if show_collection_image
+    case image_position
+      when 'right'
+        assign text_class = text_class | append: ' order-first'
+      when 'bottom'
+        assign text_class = text_class | append: ' order-first'
+      when 'as-bg'
+        assign text_class = text_class | append: ' content-overlay content-overlay--center'
+    endcase
+  endif
+
+  assign color_scheme_first = settings.color_schemes | first
+  assign color_inherit = false
+  assign parent_background = color_scheme_first.settings.background | downcase
+  assign card_background = section.settings.color_scheme.settings.background | downcase
+  if parent_background == card_background
+    assign color_inherit = true
+  endif
+
+  assign loading = 'lazy'
+  assign fetchpriority = 'low'
+  if section.index < 3
+    assign loading = 'eager'
+    assign fetchpriority = 'high'
+  endif
+-%}
+<div
+  class="collection-hero{% if show_collection_image %} collection-hero--image-{{ section.settings.image_position }}{% else %} collection-hero--no-image{% endif %} hero hero--{{ section.settings.image_height }} hero--mobile-{{ section.settings.image_height_mobile }}{% if color_inherit %} color-inherit{% endif %} section section--padding page-width page-width--{{ section.settings.container }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="{{ inner_class }}{% unless color_inherit %} blocks-radius{% endunless %}">
+    {%- if show_collection_image -%}
+      {%- capture sizes -%}(max-width: 767px) calc(100vw - 3rem), {% if image_position == 'left' or image_position == 'right' %}calc(min({{ settings.page_width }}px, 100vw) / 2){% else %}min({{ settings.page_width }}px, 100vw){% endif %}{%- endcapture -%}
+      <parallax-element
+        class="flex overflow-hidden{% if color_inherit %} blocks-radius{% endif %}{% if banner == blank %} md:hidden{% endif %}"
+        {% if section.settings.enable_parallax %}
+          data-parallax="0.3" data-parallax-direction="{{ section.settings.parallax_direction }}"
+        {% endif %}
+      >
+        <motion-element class="block flex-1" data-motion="zoom-out">
+          <picture
+            class="hero__media media-wrapper"
+            style="{% if section.settings.image_height == 'adapt' %}--aspect-ratio: {{ image_ratio }};--aspect-ratio-mobile: {{ image_ratio_mobile }};{% endif %}{% if section.settings.image_height_mobile == 'adapt' %}--aspect-ratio-mobile: {{ image_ratio_mobile }};{% endif %}"
+          >
+            {%- if banner != blank and banner_mobile != blank -%}
+              <source
+                media="(max-width: 767px)"
+                srcset="{{ banner_mobile | image_url: width: '400x' }} 400w, {{ banner_mobile | image_url: width: '600x' }} 600w, {{ banner_mobile | image_url: width: '800x' }} 800w, {{ banner_mobile | image_url: width: '1000x' }} 1000w"
+                width="{{ banner_mobile.width }}"
+                height="{{ banner_mobile.height }}"
+              >
+            {%- endif -%}
+            {%- liquid
+              if banner == blank
+                assign banner = banner_mobile
+              endif
+
+              assign alt_image = banner.alt | default: collection.title | escape
+            -%}
+            {{-
+              banner
+              | image_url: width: banner.width
+              | image_tag:
+                loading: loading,
+                fetchpriority: fetchpriority,
+                sizes: sizes,
+                width: banner.width,
+                height: banner.height,
+                widths: '300,400,500,600,700,800,900,1000,1200,1400,1600,1800,2000,2200,2400,2600,2800,3000,3200',
+                alt: alt_image,
+                class: 'collection-hero__image'
+            -}}
+            {% if section.settings.image_overlay_opacity > 0 %}
+              <div
+                class="bg-overlay"
+                style="--color-overlay-alpha: {{ section.settings.image_overlay_opacity }};"
+              ></div>
+            {% endif %}
+          </picture>
+        </motion-element>
+      </parallax-element>
+    {%- endif -%}
+
+    <div class="collection-hero__text flex flex-col justify-center text-{{ section.settings.text_alignment }}{{ text_class }}">
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when 'collection_info' -%}
+            <div
+              class="collection-hero__info section--padding"
+              {{ block.shopify_attributes }}
+              style="--section-padding-top: {{ block.settings.padding_top }}px; --section-padding-bottom: {{ block.settings.padding_bottom }}px;"
+            >
+              <{{ block.settings.heading_tag }} class="collection-hero__title overflow-hidden {{ block.settings.heading_size }}">
+                <span class="visually-hidden">{{ 'sections.collection_template.title' | t }}: </span>
+                <motion-element data-motion="fade-up" class="inline-block">
+                  {{- collection.title | escape -}}
+                </motion-element>
+              </{{ block.settings.heading_tag }}>
+              {%- if block.settings.show_description and collection.description != blank -%}
+                <div class="collection-hero__description rte text-subtext">
+                  <motion-element
+                    data-motion="fade-up"
+                    data-motion-delay="50"
+                    class="block"
+                  >
+                    {{- collection.description }}
+                  </motion-element>
+                </div>
+              {%- endif -%}
+            </div>
+        {%- endcase -%}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Collection banner",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Add a description or image by editing your collection. [Learn more](https://help.shopify.com/manual/products/collections/collection-layout)"
+    },
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_image",
+      "label": "Show collection image",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Default image",
+      "info": "If neither the collection metafield nor the feature image is set, this image will be displayed."
+    },
+    {
+      "type": "range",
+      "id": "image_overlay_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "%",
+      "label": "Image overlay opacity",
+      "default": 0
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "Image position",
+      "default": "top",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "as-bg",
+          "label": "Use image as background"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "image_height",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "extra-medium",
+          "label": "Extra medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "medium",
+      "label": "Image height"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_parallax",
+      "label": "Enable parallax effect"
+    },
+    {
+      "type": "select",
+      "id": "parallax_direction",
+      "label": "Parallax direction",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "zoom",
+          "label": "Zoom"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Mobile settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Default mobile image",
+      "info": "If neither the collection metafield nor the feature image is set, this image will be displayed."
+    },
+    {
+      "type": "select",
+      "id": "image_height_mobile",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto"
+        },
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        }
+      ],
+      "default": "auto",
+      "label": "Image height"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collection_info",
+      "name": "Collection information",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "Heading tag",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h1",
+              "label": "H1"
+            },
+            {
+              "value": "h2",
+              "label": "H2"
+            },
+            {
+              "value": "h3",
+              "label": "H3"
+            },
+            {
+              "value": "h4",
+              "label": "H4"
+            },
+            {
+              "value": "h5",
+              "label": "H5"
+            },
+            {
+              "value": "h6",
+              "label": "H6"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "show_description",
+          "default": true,
+          "label": "Show collection description"
+        },
+        {
+          "type": "range",
+          "id": "padding_top",
+          "min": 0,
+          "max": 100,
+          "step": 2,
+          "unit": "px",
+          "label": "Top padding",
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "min": 0,
+          "max": 100,
+          "step": 2,
+          "unit": "px",
+          "label": "Bottom padding",
+          "default": 50
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

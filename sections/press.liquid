@@ -1,0 +1,487 @@
+{{ 'section-press.css' | asset_url  | stylesheet_tag }}
+<script src="{{'press.js' | asset_url }}" defer="defer"></script>
+{%- capture sizes -%}
+  (max-width: 767px) {{ section.settings.max_width_mb }}px, {{ section.settings.max_width }}px
+{%- endcapture -%}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div class="section-{{ section.id }} section--padding section--press color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    <div class="section__wrapper">
+      {% render 'section-heading',
+        section_settings: section.settings,
+        description_size: section.settings.text_size,
+      %}
+      <press-element class="block press" data-section-id="{{ section.id }}"> 
+        <motion-element
+          data-motion="fade-up"
+          class="press-testimonials relative block"
+        >
+          <div class="swiper" data-section-id="{{ section.id }}">
+            <div class="swiper-wrapper">
+              {%- for block in section.blocks -%}
+                {%- liquid
+                  if block.settings.text == blank
+                    continue
+                  endif
+                -%}
+                <div class="swiper-slide text-center {{ section.settings.description_size }}" {{ block.shopify_attributes }} data-index="{{ forloop.index0 }}">
+                  {{ block.settings.text }}
+                </div>
+              {%- endfor -%}
+            </div>
+          </div>
+        </motion-element>
+        <motion-element
+          data-motion="fade-up"
+          class="press-thumbs f-grid f-grid--gap-{{ section.settings.column_gap }} overflow-hidden"
+          style="--item-count: {{ section.blocks.size }};--item-width: {{ section.settings.max_width }}px;--item-width-mobile: {{ section.settings.max_width_mb }}px;"
+        >
+          <div class="swiper" data-section-id="{{ section.id }}">
+            <div class="swiper-wrapper">
+              {%- for block in section.blocks -%}
+                {%- liquid
+                  if block.settings.text == blank
+                    continue
+                  endif 
+                -%}
+                <div class="swiper-slide" {{ block.shopify_attributes }} data-index="{{ forloop.index0 }}">
+                  {%- if block.settings.image != blank -%}
+                    <div class="media-wrapper" style="--aspect-ratio: {{ block.settings.image.aspect_ratio }};">
+                      {{
+                        block.settings.image
+                        | image_url: width: 750
+                        | image_tag:
+                          loading: 'lazy',
+                          fetchpriority: 'low',
+                          class: 'motion-reduce',
+                          sizes: sizes,
+                          widths: '140, 160, 200, 240, 280, 320, 360, 400, 440, 480',
+                          is: 'image-lazy'
+                      }}
+                    </div>
+                  {%- else -%}
+                    <div class="media-wrapper" style="--aspect-ratio: 16/9;">
+                      {{ 'image' | placeholder_svg_tag: 'placeholder-svg' }}
+                    </div>
+                  {%- endif -%}
+                </div>
+              {%- endfor -%}
+            </div>
+          </div>
+        </motion-element>
+      </press-element>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Press",
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "center",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Press",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Press settings"
+    },
+    {
+      "type": "select",
+      "id": "description_size",
+      "label": "Text size",
+      "default": "h4",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "column_gap",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "medium",
+      "label": "Column gap"
+    },
+    {
+      "type": "range",
+      "id": "max_width",
+      "min": 100,
+      "max": 300,
+      "step": 2,
+      "unit": "px",
+      "label": "Desktop image width",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "max_width_mb",
+      "min": 100,
+      "max": 300,
+      "step": 2,
+      "unit": "px",
+      "label": "Mobile image width",
+      "default": 100
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    }
+  ],
+  "blocks": [
+    {
+      "type": "press",
+      "name": "Press",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "You can add detailed text content from various press comments, comprehensive reviews, or extensive customer testimonials here."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Press",
+      "blocks": [
+        {
+          "type": "press"
+        },
+        {
+          "type": "press"
+        },
+        {
+          "type": "press"
+        },
+        {
+          "type": "press"
+        },
+        {
+          "type": "press"
+        },
+        {
+          "type": "press"
+        },
+        {
+          "type": "press"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

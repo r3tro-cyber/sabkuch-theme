@@ -1,0 +1,661 @@
+{%- style -%}
+  .section-{{ section.id }} .newsletter__form {
+    width: var(--form-width);
+    max-width: 100%;
+  }
+{%- endstyle -%}
+{{ 'section-newsletter.css' | asset_url | stylesheet_tag }}
+
+{% liquid
+  assign has_richtext = false
+  if section.settings.heading != blank or section.settings.description != blank or section.settings.subheading != blank
+    assign has_richtext = true
+  endif
+
+  assign motion_delay = 50
+
+  assign wrapper_class = 'flex'
+  if section.settings.layout == 'horizontal'
+    assign wrapper_class = wrapper_class | append: ' justify-between items-center flex-col md:flex-row md:gap-4'
+  else
+    assign wrapper_class = wrapper_class | append: ' flex-col'
+    if section.settings.alignment == 'left'
+      assign wrapper_class = wrapper_class | append: ' items-start'
+    else
+      assign wrapper_class = wrapper_class | append: ' items-center'
+    endif
+  endif
+
+  assign alignment_mobile = section.settings.alignment_mobile
+  if alignment_mobile == 'inherit'
+    assign alignment_mobile = section.settings.alignment
+  endif
+
+  if section.settings.width_settings == 'full'
+    assign form_width = '100%'
+  else
+    assign form_width = section.settings.form_width | append: 'px'
+  endif
+%}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div
+  class="section section-{{ section.id }} section--padding newsletter color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div
+    class="section__container page-width page-width--{{ section.settings.container }} {%- if section.blocks.size > 0 -%}newsletter__container--image flex justify-between items-center flex-col md:flex-row gap-y-5{%- endif -%}"
+    {% if section.settings.layout == 'horizontal' %}
+      style="--header-padding-bottom: 0px;"
+    {% endif %}
+  >
+    {%- if section.blocks.size > 0 -%}
+      <div class="newsletter__media-wrapper overflow-hidden block w-full h-full blocks-radius w-full md:w-1/2">
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign image = block.settings.image
+            assign image_alt = image.alt | default: shop.name | escape
+            assign image_ratio = block.settings.image_ratio | default: 'adapt'
+            if image_ratio == 'adapt'
+              if image != blank
+                assign image_ratio = image.aspect_ratio
+              else
+                assign image_ratio = '1'
+              endif
+            endif
+          -%}
+          <div {{ block.shopify_attributes }} data-index="{{ forloop.index0 }}">
+            <motion-element class="block h-full" data-motion="zoom-out-sm">
+              <picture
+                class="newsletter__media media-wrapper h-full{% if image == blank %} bg-none{% endif %}"
+                style="--aspect-ratio: {{ image_ratio }};"
+              >
+                {%- if image != blank -%}
+                  {{-
+                    image
+                    | image_url: width: 1100
+                    | image_tag:
+                      loading: 'lazy',
+                      class: 'motion-reduce absolute inset-0 w-full h-full hover-scale-up',
+                      widths: '165, 360, 535, 750, 940, 1100',
+                      is: 'image-lazy',
+                      alt: image_alt
+                  -}}
+                {%- else -%}
+                  {{ 'lifestyle-1' | placeholder_svg_tag: 'placeholder-svg hover-scale-up w-full h-full' }}
+                {%- endif -%}
+              </picture>
+            </motion-element>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="{{ wrapper_class }} newsletter__form-wrapper {% if section.blocks.size > 0 %}w-full md:w-1/2{% endif %}">
+      {% if has_richtext %}
+        <div class="section__header s__header rich-text text-{{ alignment_mobile }} md:text-{{ section.settings.alignment }}">
+          {% if section.settings.subheading != blank %}
+            <motion-element
+              data-motion="fade-up"
+              data-motion-delay="{{ motion_delay }}"
+              class="block rich-text__subheading text-subheading"
+            >
+              {{- section.settings.subheading -}}
+            </motion-element>
+            {%- assign motion_delay = motion_delay | plus: 50 -%}
+          {% endif %}
+          {% if section.settings.heading != blank %}
+            <h2 class="rich-text__heading {{ section.settings.heading_size }}">
+              <motion-element
+                data-motion="fade-up"
+                data-motion-delay="{{ motion_delay }}"
+                class="block"
+              >
+                {% render 'highlight-text',
+                  hl_text: section.settings.heading,
+                  hl_style: section.settings.highlight_style,
+                  hl_font_style: section.settings.highlight_font_style,
+                  hl_style_color: section.settings.highlight_style_color,
+                  hl_text_color: section.settings.highlight_text_color
+                %}
+              </motion-element>
+            </h2>
+            {%- assign motion_delay = motion_delay | plus: 50 -%}
+          {% endif %}
+          {% if section.settings.description != blank %}
+            <motion-element
+              data-motion="fade-up"
+              data-motion-delay="{{ motion_delay }}"
+              class="block rich-text__text rte text-subtext {{ section.settings.text_size }}"
+            >
+              {{- section.settings.description -}}
+            </motion-element>
+            {%- assign motion_delay = motion_delay | plus: 50 -%}
+          {% endif %}
+        </div>
+      {% endif %}
+      <motion-element
+        data-motion="fade-up"
+        data-motion-delay="{{ motion_delay }}"
+        class="newsletter__form grid gap-4 text-{{ alignment_mobile }} md:text-{{ section.settings.alignment }}"
+        style="--form-width: {{ form_width }};"
+      >
+        {% render 'newsletter-form',
+          custom_id: section.id,
+          button_style: section.settings.button_style,
+          button_icon: section.settings.button_icon
+        %}
+        {%- if section.settings.newsletter_term != blank -%}
+          <div class="rich-text__text rte text-subtext {{ section.settings.newsletter_term_size }}">
+            {{ section.settings.newsletter_term }}
+          </div>
+        {%- endif -%}
+      </motion-element>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Email signup",
+  "tag": "section",
+  "class": "section",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        }
+      ],
+      "default": "vertical"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Signup form",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h2",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text",
+      "default": "<p>Be the first to know about new collections and exclusive offers.</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        }
+      ],
+      "default": "center",
+      "label": "Text alignment"
+    },
+    {
+      "type": "header",
+      "content": "Mobile settings"
+    },
+    {
+      "type": "select",
+      "id": "alignment_mobile",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        }
+      ],
+      "default": "inherit",
+      "label": "Text alignment"
+    },
+    {
+      "type": "header",
+      "content": "Form settings"
+    },
+    {
+      "type": "select",
+      "id": "width_settings",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "custom",
+          "label": "Custom width"
+        }
+      ],
+      "default": "custom",
+      "label": "Container"
+    },
+    {
+      "type": "range",
+      "id": "form_width",
+      "label": "Form width (px)",
+      "min": 450,
+      "max": 800,
+      "step": 5,
+      "default": 500,
+      "visible_if": "{{ section.settings.width_settings == 'custom' }}"
+    },
+    {
+      "type": "richtext",
+      "id": "newsletter_term",
+      "label": "Term & Policy text",
+      "default": "<p>By subscribing you agree to the <a href='#'>Terms of Use</a> & <a href='#'>Privacy Policy.</a></p>"
+    },
+    {
+      "type": "select",
+      "id": "newsletter_term_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--blank",
+          "label": "Blank button"
+        }
+      ],
+      "default": "btn--primary"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "image",
+      "name": "Image",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "default": "4/3",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Email signup"
+    }
+  ]
+}
+{% endschema %}

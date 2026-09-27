@@ -1,0 +1,732 @@
+{{ 'section-brand-logos.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign container = section.settings.container
+  assign columns_desktop = section.settings.columns_desktop
+  assign tablet_items = columns_desktop | at_most: 3
+  assign laptop_items = columns_desktop | at_most: 6
+  assign columns_mobile_int = section.settings.columns_mobile | plus: 0
+  assign button_style = section.settings.button_style
+  assign button_label = section.settings.button_label
+  assign button_link = section.settings.button_link
+  assign button_icon = section.settings.button_icon
+  assign enable_swipe_mobile = false
+  if section.settings.swipe_on_mobile and section.blocks.size > columns_mobile_int
+    assign enable_swipe_mobile = true
+  endif
+  assign first_block = section.blocks.first
+  assign image_ratio = first_block.settings.image.aspect_ratio | default: 2.333
+-%}
+{% style %}
+  #section-{{ section.id }} {
+    --section-padding-top: {{ section.settings.padding_top }}px;
+    --section-padding-bottom: {{ section.settings.padding_bottom }}px;
+    --f-columns-mobile: {{ columns_mobile_int }};
+    --f-columns-md: {{ tablet_items }};
+    --f-columns-lg: {{ laptop_items }};
+    --f-columns-xl: {{ columns_desktop }};
+  }
+{% endstyle %}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div
+  id="section-{{ section.id }}"
+  class="section brand-logos section--padding color-{{ section.settings.color_scheme }}"
+>
+  <div class="section__container page-width page-width--{{ container }}">
+    <div class="section__wrapper">
+      {% render 'section-heading',
+        section_settings: section.settings,
+        description_size: section.settings.text_size,
+        button_visible: true,
+        button_label: button_label,
+        button_link: button_link,
+        button_style: button_style,
+        button_icon: button_icon
+      %}
+      <div class="section__content swiper-show-nav-on-hover relative">
+        <div class="brand-logos__container{% if section.settings.grid_bordered %} grid-bordered blocks-radius{% endif %}">
+          <div
+            class="brand-logos__inner{% if enable_swipe_mobile %} swipe-mobile swipe-mobile--{{ section.settings.columns_mobile }}-cols{% endif %}"
+            data-section-id="{{ section.id }}"
+          >
+            <div class="brand-logos__items f-grid f-grid--gap-{{ section.settings.column_gap }} f-grid--row-gap-{{ section.settings.row_gap }}{% if enable_swipe_mobile %} swipe-mobile__inner{% endif %}">
+              {%- for block in section.blocks -%}
+                {%- liquid
+                  assign mod_desktop = forloop.index | modulo: columns_desktop
+                  assign mod_laptop = forloop.index | modulo: laptop_items
+                  assign mod_tablet = forloop.index | modulo: tablet_items
+                  assign mod_mobile = forloop.index | modulo: columns_mobile_int
+                  assign classes = ''
+                  if mod_desktop == 0 and section.settings.grid_bordered
+                    assign classes = classes | append: ' desktop-hide-border'
+                  endif
+                  if mod_laptop == 0 and section.settings.grid_bordered
+                    assign classes = classes | append: ' laptop-hide-border'
+                  endif
+                  if mod_tablet == 0 and section.settings.grid_bordered
+                    assign classes = classes | append: ' tablet-hide-border'
+                  endif
+                  if mod_mobile == 0 and section.settings.grid_bordered and enable_swipe_mobile == false
+                    assign classes = classes | append: ' mobile-hide-border'
+                  endif
+                -%}
+                <div
+                  class="f-column"
+                  {{ block.shopify_attributes }}
+                  data-index="{{ forloop.index0 }}"
+                >
+                  <div class="brand-logos__wrapper brand-logos--padding-{{ section.settings.image_padding }} brand-logos--image-{{ section.settings.image_width }} flex flex-col items-center justify-start h-full{{ classes }}">
+                    <a
+                      {% if block.settings.image_link != blank %}
+                        href="{{ block.settings.image_link }}"
+                      {% else %}
+                        role="link" aria-disabled="true"
+                      {% endif %}
+                      class="brand-logos__image relative focus-inset btn-hover-wrapper flex items-center justify-center w-full"
+                    >
+                      <motion-element
+                        data-motion="zoom-out-sm"
+                        class="block w-full media-wrapper{% if section.settings.image_width == 'full' %} hover-wrapper{% endif %}"
+                        style="--aspect-ratio: {{ image_ratio }};"
+                      >
+                        {%- if block.settings.image != blank -%}
+                          {%- liquid
+                            assign image_widths = '60, 70, 80, 120, 140, 160, 240, 320, 450, 535, 710, 800, 900,' | append: section.settings.image.width
+                            assign alt_image = block.settings.image.alt | default: shop.name | escape
+                          -%}
+                          {{
+                            block.settings.image
+                            | image_url: width: block.settings.image.width
+                            | image_tag:
+                              loading: 'lazy',
+                              class: 'motion-reduce hover-scale-up',
+                              widths: image_widths,
+                              is: 'image-lazy',
+                              alt: alt_image
+                          }}
+                        {%- else -%}
+                          {{ 'image' | placeholder_svg_tag: 'placeholder-svg brand-logos__placeholder hover-scale-up' }}
+                        {%- endif -%}
+                      </motion-element>
+                    </a>
+                  </div>
+                </div>
+              {%- endfor -%}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Brand logos",
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "select",
+      "id": "section_header_alignment",
+      "label": "Text alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "section_header_alignment_mobile",
+      "label": "Text alignment on mobile",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "inherit"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Brand logos",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Description size",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--underline"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Image"
+    },
+    {
+      "type": "select",
+      "id": "image_padding",
+      "label": "Image padding",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "select",
+      "id": "image_width",
+      "label": "Image width",
+      "options": [
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Grid settings"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Number of columns on desktop",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "select",
+      "id": "column_gap",
+      "label": "Column gap",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "select",
+      "id": "row_gap",
+      "label": "Row gap",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Same as the column gap"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "inherit"
+    },
+    {
+      "type": "checkbox",
+      "id": "grid_bordered",
+      "label": "Show grid border",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Number of columns on mobile",
+      "options": [
+        {
+          "value": "1",
+          "label": "1 column"
+        },
+        {
+          "value": "2",
+          "label": "2 columns"
+        },
+        {
+          "value": "3",
+          "label": "3 columns"
+        }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "checkbox",
+      "id": "swipe_on_mobile",
+      "label": "Enable swipe on mobile",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "label": "Show divider",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "label": "Divider width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "logo",
+      "name": "Logo",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "url",
+          "id": "image_link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Brand Logos",
+      "blocks": [
+        {
+          "type": "logo"
+        },
+        {
+          "type": "logo"
+        },
+        {
+          "type": "logo"
+        },
+        {
+          "type": "logo"
+        },
+        {
+          "type": "logo"
+        },
+        {
+          "type": "logo"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

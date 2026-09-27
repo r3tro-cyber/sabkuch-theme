@@ -1,0 +1,391 @@
+{% liquid
+  assign position = 'left,center,right' | split: ','
+%}
+<div
+  class="topbar section--padding color-{{ section.settings.color_scheme }} page-width page-width--{{ section.settings.container }}{% if section.settings.show_separator_line %} topbar--show-separator-line{% endif %}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="topbar__inner grid items-center">
+    {% for pos in position %}
+      <div class="topbar__column topbar__{{ pos }}{% unless pos == 'center' %} hidden{% else %} flex{% endunless %} lg:flex flex-wrap flex-col lg:flex-row items-center lg:justify-{{ pos | replace: 'left','start' | replace: 'right','end' }} text-center lg:text-{{ pos }}">
+        {% for block in section.blocks %}
+          {% unless block.settings.position == pos %}
+            {% continue %}
+          {% endunless %}
+          {%- case block.type -%}
+            {% when 'link_list' %}
+              <ul class="topbar__menu flex flex-wrap items-center justify-center lg:justify-{{ pos | replace: 'left','start' | replace: 'right','end' }}">
+                {% for link in linklists[block.settings.menu].links %}
+                  <li class="topbar__menu-item">
+                    <a href="{{ link.url }}" class="block reversed-link">{{ link.title }}</a>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% when 'text' %}
+              <div class="topbar__text rte" style="--highlight-text-color: {{ block.settings.highlight_text_color }}; --highlight-text-background-color: {{ block.settings.highlight_text_background_color }};">
+                {% if block.settings.highlight_text != blank %}
+                  <p class="highlight-text highlight-text--{{ block.settings.highlight_text_style }}">
+                    {{- block.settings.highlight_text -}}
+                  </p>
+                {% endif %}
+                <p>{{- block.settings.text -}}</p>
+              </div>
+            {% when 'language_country' %}
+              <div class="topbar__country flex items-center gap-4">
+                {% liquid
+                  if block.settings.show_language_selector
+                    render 'language-selector', plain: true, class: 'flex', form_id: block.id
+                  endif
+                  if block.settings.show_country_selector
+                    render 'country-selector', plain: true, class: 'flex', form_id: block.id
+                  endif
+                %}
+              </div>
+            {% when 'social_links' %}
+              {% liquid
+                assign socials = 'facebook,instagram,youtube,tiktok,twitter,pinterest,snapchat,tumblr,vimeo' | split: ','
+                assign show_social = false
+                for social in socials
+                  assign social_setting = 'show_' | append: social
+                  assign social_link = 'social_' | append: social | append: '_link'
+                  if block.settings[social_setting] and settings[social_link] != blank
+                    assign show_social = true
+                    break
+                  endif
+                endfor
+              %}
+              {% if show_social %}
+                {% render 'social-icons',
+                  class: 'topbar__social',
+                  size: 'medium',
+                  show_facebook: block.settings.show_facebook,
+                  show_instagram: block.settings.show_instagram,
+                  show_tiktok: block.settings.show_tiktok,
+                  show_twitter: block.settings.show_twitter,
+                  show_pinterest: block.settings.show_pinterest,
+                  show_snapchat: block.settings.show_snapchat,
+                  show_tumblr: block.settings.show_tumblr,
+                  show_youtube: block.settings.show_youtube,
+                  show_vimeo: block.settings.show_vimeo
+                %}
+              {% endif %}
+          {%- endcase -%}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Top bar",
+  "class": "topbar-section z-31",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_separator_line",
+      "label": "Show separator line",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "unit": "px",
+      "step": 2,
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "unit": "px",
+      "step": 2,
+      "default": 12
+    }
+  ],
+  "blocks": [
+    {
+      "type": "link_list",
+      "name": "Linklist",
+      "settings": [
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "Menu",
+          "default": "main-menu"
+        },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ],
+          "default": "left"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Text",
+          "default": "Welcome to our store"
+        },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "header",
+          "content": "Highlight text"
+        },
+        {
+          "type": "text",
+          "id": "highlight_text",
+          "label": "Text"
+        },
+        {
+          "type": "select",
+          "id": "highlight_text_style",
+          "label": "Style",
+          "options": [
+            {
+              "value": "button",
+              "label": "Button"
+            },
+            {
+              "value": "text-color",
+              "label": "Text color"
+            }
+          ],
+          "default": "button"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Color",
+          "info": "Leave blank to use default accent color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_background_color",
+          "label": "Background color",
+          "info": "Leave blank to use default accent color",
+          "visible_if": "{{ block.settings.highlight_text_style == 'button' }}"
+        }
+      ]
+    },
+    {
+      "type": "social_links",
+      "name": "Social links",
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_facebook",
+          "label": "Show Facebook",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_instagram",
+          "label": "Show Instagram",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_twitter",
+          "label": "Show X",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_tiktok",
+          "label": "Show Tiktok",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_pinterest",
+          "label": "Show Pinterest",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "show_snapchat",
+          "label": "Show Snapchat",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "show_tumblr",
+          "label": "Show Tumblrs",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "show_youtube",
+          "label": "Show Youtube",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "show_vimeo",
+          "label": "Show Vimeo",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ],
+          "default": "right"
+        }
+      ]
+    },
+    {
+      "type": "language_country",
+      "name": "Language & country",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_language_selector",
+          "label": "Enable language selector",
+          "info": "To add a language, go to your [language settings.](/admin/settings/languages)",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_country_selector",
+          "label": "Enable country/region selector",
+          "info": "To add a country/region, go to your [market settings.](/admin/settings/markets)",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ],
+          "default": "right"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "header"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Top bar",
+      "blocks": [
+        {
+          "type": "link_list"
+        },
+        {
+          "type": "text"
+        },
+        {
+          "type": "language_country"
+        },
+        {
+          "type": "social_links"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

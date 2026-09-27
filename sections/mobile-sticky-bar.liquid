@@ -1,0 +1,353 @@
+{%- if section.settings.enable_sticky_bar -%}
+  <script src="{{ 'mobile-sticky-bar.js' | asset_url }}" defer="defer"></script>
+  {% style %}
+    .mobile-sticky-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 11;
+      background: rgba(var(--color-background));
+      box-shadow: -1px -2px 10px rgb(0 0 0 / 8%);
+      max-width: 100vw;
+      will-change: transform;
+      transition: transform 0.3s;
+    }
+    .mobile-sticky-bar-up .mobile-sticky-bar {
+      transform: translateY(0);
+    }
+    .mobile-sticky-bar-down .mobile-sticky-bar {
+      transform: translateY(100%);
+    }
+    .mobile-sticky-bar__link {
+      padding: 1rem 0.5rem;
+      min-height: 5rem !important;
+      overflow: hidden;
+      gap: 0.5rem;
+    }
+    .mobile-sticky-bar__link + .mobile-sticky-bar__link {
+      border-inline-start: 0.1rem solid rgba(var(--color-border), var(--color-border-alpha));
+    }
+    .mobile-sticky-bar__text {
+      line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    @media (max-width: 767px) {
+      body.mobile-sticky-bar-enabled.mobile-sticky-bar-up {
+        padding-bottom: calc(var(--mobile-sticky-bar-height, 6.5rem) + 1rem);
+      }
+    }
+  {% endstyle %}
+  {%- liquid
+    assign show_text = section.settings.show_text
+    assign block_size = section.blocks.size
+    assign default_home = 'sections.mobile-sticky-bar.home' | t
+    assign default_products = 'sections.mobile-sticky-bar.products' | t
+    assign default_cart = 'sections.mobile-sticky-bar.cart' | t
+  -%}
+  {%- if block_size > 0 -%}
+    <mobile-sticky-bar class="mobile-sticky-bar md:hidden up" data-section-type="mobile-sticky-bar">
+      <div class="mobile-sticky-bar__wrapper f-grid" style="--f-grid-columns: {{ block_size }}">
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign title = block.settings.text
+          -%}
+          {%- case block.type -%}
+            {%- when 'home' -%}
+              <a
+                class="f-column mobile-sticky-bar__link mobile-sticky-bar__{{ block.type }} flex flex-col items-center justify-center"
+                href="{{ shop.secure_url }}"
+                {{ block.shopify_attributes }}
+              >
+                {%- render 'icon-home', size: 'large' -%}
+                <span class="mobile-sticky-bar__text text-center text-sm{% unless show_text %} visually-hidden{% endunless %}">
+                  {{- title | default: default_home -}}
+                </span>
+              </a>
+            {%- when 'products' -%}
+              {%- liquid
+                assign selected_collection = block.settings.collection
+                assign default_url = routes.all_products_collection_url
+              -%}
+              <a
+                class="f-column mobile-sticky-bar__link mobile-sticky-bar__{{ block.type }} flex flex-col items-center justify-center"
+                href="{{ selected_collection.url | default: default_url }}"
+                {{ block.shopify_attributes }}
+              >
+                {%- render 'icon-products', size: 'large' -%}
+                <span class="mobile-sticky-bar__text text-center text-sm{% unless show_text %} visually-hidden{% endunless %}">
+                  {{- title | default: default_products -}}
+                </span>
+              </a>
+            {%- when 'cart' -%}
+              <a
+                href="{{ routes.cart_url }}"
+                class="f-column cart-drawer-button mobile-sticky-bar__link mobile-sticky-bar__{{ block.type }} flex flex-col items-center justify-center"
+                {% if request.page_type != 'cart' and settings.cart_type == 'drawer' %}
+                  aria-controls="CartDrawer"
+                {% endif %}
+              >
+                <span class="cart-icon-wrap relative flex justify-center">
+                  {%- render 'icon-cart', size: 'large', name: settings.cart_icon -%}
+                  <cart-count
+                    class="cart-count cart-count--absolute{% if cart.item_count > 99 %} cart-count--small-medium{% endif %}"
+                    aria-label="{{ 'general.cart.cart_count' | t: count: cart.item_count | escape }}"
+                    {% if cart == empty %}
+                      hidden
+                    {% endif %}
+                  >
+                    {%- if cart.item_count < 100 -%}
+                      {{- cart.item_count -}}
+                    {%- else -%}
+                      <span class="text-sm-extra">99+</span>
+                    {%- endif -%}
+                  </cart-count>
+                </span>
+                <span class="mobile-sticky-bar__text text-center text-sm{% unless show_text %} visually-hidden{% endunless %}">
+                  {{- title | default: default_cart -}}
+                </span>
+              </a>
+            {%- when 'link' -%}
+              {%- if block.settings.url != blank -%}
+                <a
+                  class="f-column mobile-sticky-bar__link mobile-sticky-bar__{{ block.type }} flex flex-col items-center justify-center"
+                  href="{{ block.settings.url }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {% if block.settings.icon != 'none' %}
+                    {% render 'icons', icon: block.settings.icon, size: 'large' %}
+                  {%- endif -%}
+                  <span class="mobile-sticky-bar__text text-center text-sm{% unless show_text %} visually-hidden{% endunless %}">
+                    {{- title -}}
+                  </span>
+                </a>
+              {%- endif -%}
+          {%- endcase -%}
+        {%- endfor -%}
+      </div>
+    </mobile-sticky-bar>
+    <div id="mobileNavStatic" class="no-empty"></div>
+  {%- endif -%}
+{%- endif -%}
+{% schema %}
+{
+  "name": "Mobile navigation bar",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "This section only shows on mobile. Please switch to mobile view."
+    },
+    {
+      "type": "header",
+      "content": "Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky_bar",
+      "label": "Enable mobile sticky bar",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_text",
+      "label": "Show button label",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "home",
+      "limit": 1,
+      "name": "Home",
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Linked to home page."
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "default": "Home",
+          "label": "Text"
+        }
+      ]
+    },
+    {
+      "type": "cart",
+      "limit": 1,
+      "name": "Cart",
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Open cart drawer."
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "default": "Cart",
+          "label": "Text"
+        }
+      ]
+    },
+    {
+      "type": "products",
+      "limit": 1,
+      "name": "Products",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "default": "Products",
+          "label": "Text"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection",
+          "info": "If there is no collection selected, the button will be linked to \"All\" collection."
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Custom link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "default": "Custom link",
+          "label": "Text"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            }
+          ],
+          "default": "none"
+        }
+      ]
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "footer"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Mobile navigation bar",
+      "blocks": [
+        {
+          "type": "home"
+        },
+        {
+          "type": "products"
+        },
+        {
+          "type": "cart"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

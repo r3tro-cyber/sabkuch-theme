@@ -1,0 +1,250 @@
+{%- liquid
+  assign poster = section.settings.video.preview_image | default: section.settings.cover_image
+-%}
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --section-padding-top: {{ section.settings.padding_top }}px;
+    --section-padding-bottom: {{ section.settings.padding_bottom }}px;
+    {%- if section.settings.video_ratio == 'adapt' %}
+      {%- if poster != null -%}
+      --media-ratio: {{ poster.aspect_ratio }};
+      {%- else -%}
+      --media-ratio: 16/9;
+      {%- endif -%}
+    {% else -%}
+      --media-ratio: {{ section.settings.video_ratio }};
+    {%- endif -%}
+  }
+  #shopify-section-{{ section.id }} .page-width--full {
+    --page-padding: 0;
+  }
+{% endstyle %}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div class="section-video section--padding">
+  <div class="section-video__container relative page-width page-width--{{ section.settings.container }}">
+    <div class="section-video__wrapper{% unless section.settings.container == 'full' %} blocks-radius{% endunless %}">
+      <parallax-element
+        class="block overflow-hidden"
+        {% if section.settings.enable_parallax %}
+          data-parallax="0.3" data-parallax-direction="{{ section.settings.parallax_direction }}"
+        {% endif %}
+      >
+        <motion-element data-motion="zoom-out" class="relative block media media--adapt">
+          {%- capture sizes -%}{% if section.settings.container == 'full' %}100vw{% else %}min({{ settings.page_width }}px, 100vw){% endif %}{%- endcapture -%}
+          {%- render 'video',
+            sizes: sizes,
+            video: section.settings.video,
+            video_url: section.settings.video_url,
+            muted: section.settings.enable_video_autoplay,
+            autoplay: section.settings.enable_video_autoplay,
+            controls: true,
+            loop: section.settings.enable_video_looping,
+            description: section.settings.description,
+            cover_image: section.settings.cover_image,
+            show_play_button: true
+          -%}
+        </motion-element>
+      </parallax-element>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Video",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "header",
+      "content": "Shopify-hosted video"
+    },
+    {
+      "type": "video",
+      "label": "Video",
+      "id": "video"
+    },
+    {
+      "type": "header",
+      "content": "Or embed video from URL",
+      "info": "Shows when no Shopify-hosted video is selected."
+    },
+    {
+      "type": "video_url",
+      "id": "video_url",
+      "accept": [
+        "vimeo",
+        "youtube"
+      ],
+      "default": "https://www.youtube.com/watch?v=_9VUPq3SxOc",
+      "label": "URL",
+      "info": "Use a YouTube or Vimeo URL"
+    },
+    {
+      "type": "image_picker",
+      "id": "cover_image",
+      "label": "Cover image"
+    },
+    {
+      "type": "select",
+      "id": "video_ratio",
+      "label": "Video ratio",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "1/1",
+          "label": "Square (1:1)"
+        },
+        {
+          "value": "4/3",
+          "label": "Landscape (4:3)"
+        },
+        {
+          "value": "4/5",
+          "label": "Portrait (4:5)"
+        },
+        {
+          "value": "16/9",
+          "label": "Widescreen (16:9)"
+        },
+        {
+          "value": "9/16",
+          "label": "Vertical (9:16)"
+        }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Video alt text",
+      "info": "Describe the video for customers using screen readers. [Learn more](https://help.shopify.com/manual/online-store/themes/theme-structure/theme-features#video)"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_video_autoplay",
+      "label": "Enable video autoplay",
+      "info": "Video are muted automatically to allow autoplay.",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_video_looping",
+      "label": "Enable video looping",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_parallax",
+      "label": "Enable parallax effect"
+    },
+    {
+      "type": "select",
+      "id": "parallax_direction",
+      "label": "Parallax direction",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "zoom",
+          "label": "Zoom"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Video"
+    }
+  ],
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  }
+}
+{% endschema %}

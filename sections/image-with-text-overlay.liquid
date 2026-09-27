@@ -1,0 +1,747 @@
+{%- liquid
+  assign container = section.settings.container
+  assign desktop_height = section.settings.desktop_height
+  assign mobile_height = section.settings.mobile_height
+
+  assign loading = 'lazy'
+  assign fetchpriority = 'auto'
+
+  if section.index == 1 or section.settings.enable_preload_image
+    assign loading = 'eager'
+    assign fetchpriority = 'high'
+  endif
+-%}
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-padding-top: {{ section.settings.padding_top }}px;
+    --section-padding-bottom: {{ section.settings.padding_bottom }}px;
+    {%- if section.settings.image != blank and desktop_height == 'adapt' %}
+      --media-ratio: {{ section.settings.image.aspect_ratio }};
+    {% endif -%}
+    {%- if container == 'full' -%}
+      --padding-x: var(--page-padding);
+    {%- endif -%}
+  }
+  #shopify-section-{{ section.id }} .page-width--full {
+    --page-padding: 0;
+  }
+
+  {%- if section.settings.image_mobile != blank and mobile_height == 'adapt' %}
+    @media screen and (max-width: 767px) {
+      #shopify-section-{{ section.id }} {
+        --media-ratio-mobile: {{ section.settings.image_mobile.aspect_ratio }};
+      }
+    }
+  {% endif -%}
+</style>
+<div class="section image-with-text-overlay section--padding">
+  <div class="section__container page-width page-width--{{ container }}">
+    <div class="relative overflow-hidden{% unless container == 'full' %} blocks-radius{% endunless %}">
+      <parallax-element
+        class="block w-full h-full overflow-hidden"
+        {% if section.settings.enable_parallax %}
+          data-parallax="0.5" data-parallax-direction="{{ section.settings.parallax_direction }}"
+        {% endif %}
+      >
+        <motion-element
+          data-motion="zoom-out"
+          class="block relative overflow-hidden w-full h-full media mb:media--{{ mobile_height }}{% if desktop_height == 'adapt' %} media--adapt{% else %} media--{{ desktop_height }}{% endif %}"
+        >
+          {%- if section.settings.image != blank -%}
+            {%- capture sizes -%}{% if container == 'full' %}100vw{% else %}min({{ settings.page_width }}px, 100vw){% endif %}{%- endcapture -%}
+            <picture class="media-wrapper media--height block w-full h-full relative overflow-hidden">
+              {%- if section.settings.image_mobile -%}
+                <source
+                  media="(max-width: 767px)"
+                  srcset="{{ section.settings.image_mobile | image_url: width: '400x' }} 400w, {{ section.settings.image_mobile | image_url: width: '600x' }} 600w, {{ section.settings.image_mobile | image_url: width: '800x' }} 800w, {{ section.settings.image_mobile | image_url: width: '1000x' }} 1000w"
+                  width="{{ section.settings.image_mobile.width }}"
+                  height="{{ section.settings.image_mobile.height }}"
+                >
+              {%- endif -%}
+              {% assign alt = section.settings.image.alt | default: shop.name | escape %}
+              {{-
+                section.settings.image
+                | image_url: width: section.settings.image.width
+                | image_tag:
+                  loading: loading,
+                  fetchpriority: fetchpriority,
+                  sizes: sizes,
+                  widths: '300,400,500,600,700,800,900,1000,1200,1400,1600,1800,2000,2200,2400,2600,2800,3000,3200',
+                  is: 'image-lazy',
+                  alt: alt
+              -}}
+            </picture>
+          {%- else -%}
+            <div class="media-wrapper">
+              {{- 'lifestyle-1' | placeholder_svg_tag: 'placeholder-svg' -}}
+            </div>
+          {%- endif -%}
+        </motion-element>
+      </parallax-element>
+      <div class="image-with-text-ovelay__content card-media--large">
+        <div class="image-with-text-ovelay__content-wrapper content-overlay content-overlay--{{ section.settings.content_position_mobile }} content-overlay--{{ section.settings.content_position }} color-{{ section.settings.color_scheme }}{% if container == 'full' %} page-width{% endif %}">
+          <div class="relative z-1 rich-text text-{{ section.settings.content_alignment_mobile }} md:text-{{ section.settings.content_alignment }}">
+            {%- assign motion_delay = 50 -%}
+            {% for block in section.blocks %}
+              {% case block.type %}
+                {% when 'subheading' %}
+                  <motion-element
+                    data-motion="fade-up"
+                    data-motion-delay="{{ motion_delay }}"
+                    class="block rich-text__subheading text-subheading"
+                    {{ block.shopify_attributes }}
+                  >
+                    {{ block.settings.subheading }}
+                  </motion-element>
+                  {%- assign motion_delay = motion_delay | plus: 50 -%}
+                {% when 'heading' %}
+                  <h2 class="rich-text__heading {{ block.settings.heading_size }}" {{ block.shopify_attributes }}>
+                    <motion-element data-motion="fade-up" data-motion-delay="{{ motion_delay }}" class="block">
+                      {% render 'highlight-text',
+                        hl_text: block.settings.heading,
+                        hl_style: block.settings.highlight_style,
+                        hl_font_style: block.settings.highlight_font_style,
+                        hl_style_color: block.settings.highlight_style_color,
+                        hl_text_color: block.settings.highlight_text_color
+                      %}
+                    </motion-element>
+                  </h2>
+                  {%- assign motion_delay = motion_delay | plus: 50 -%}
+                {% when 'text' %}
+                  <motion-element
+                    data-motion="fade-up"
+                    data-motion-delay="{{ motion_delay }}"
+                    class="block rich-text__text rte {{ block.settings.text_size }}"
+                    {{ block.shopify_attributes }}
+                  >
+                    {{- block.settings.text -}}
+                  </motion-element>
+                  {%- assign motion_delay = motion_delay | plus: 50 -%}
+                {% when 'button' %}
+                  {% if block.settings.button_label != blank %}
+                    <motion-element class="block" data-motion="fade-up" data-motion-delay="{{ motion_delay }}">
+                      {% render 'button',
+                        button_style: block.settings.button_style,
+                        button_link: block.settings.button_link,
+                        button_label: block.settings.button_label,
+                        button_icon: block.settings.button_icon
+                      %}
+                    </motion-element>
+                  {% endif %}
+              {% endcase %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div
+        class="bg-overlay absolute inset-0"
+        style="--color-overlay-alpha: {{ section.settings.overlay_opacity }};"
+      ></div>
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Image with text overlay",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "full",
+      "label": "Container"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "select",
+      "id": "desktop_height",
+      "label": "Desktop height",
+      "options": [
+        {
+          "label": "Adapt to image",
+          "value": "adapt"
+        },
+        {
+          "label": "Extra small",
+          "value": "extra-small"
+        },
+        {
+          "label": "Small",
+          "value": "small"
+        },
+        {
+          "label": "Medium",
+          "value": "medium"
+        },
+        {
+          "label": "Extra medium",
+          "value": "extra-medium"
+        },
+        {
+          "label": "Large",
+          "value": "large"
+        },
+        {
+          "label": "Extra large",
+          "value": "extra-large"
+        }
+      ],
+      "default": "extra-medium"
+    },
+    {
+      "type": "range",
+      "label": "Overlay opacity",
+      "id": "overlay_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 70
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_parallax",
+      "label": "Enable parallax effect"
+    },
+    {
+      "type": "select",
+      "id": "parallax_direction",
+      "label": "Parallax direction",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "zoom",
+          "label": "Zoom"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Content settings"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-inverse"
+    },
+    {
+      "type": "select",
+      "id": "content_position",
+      "label": "Content position",
+      "default": "middle-left",
+      "options": [
+        {
+          "label": "Top left",
+          "value": "top-left"
+        },
+        {
+          "label": "Top center",
+          "value": "top-center"
+        },
+        {
+          "label": "Top right",
+          "value": "top-right"
+        },
+        {
+          "label": "Middle left",
+          "value": "middle-left"
+        },
+        {
+          "label": "Middle center",
+          "value": "middle-center"
+        },
+        {
+          "label": "Middle right",
+          "value": "middle-right"
+        },
+        {
+          "label": "Bottom left",
+          "value": "bottom-left"
+        },
+        {
+          "label": "Bottom center",
+          "value": "bottom-center"
+        },
+        {
+          "label": "Bottom right",
+          "value": "bottom-right"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Content alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Mobile settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Image"
+    },
+    {
+      "type": "select",
+      "id": "mobile_height",
+      "label": "Mobile height",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        },
+        {
+          "label": "Adapt to image",
+          "value": "adapt"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "content_position_mobile",
+      "label": "Content position",
+      "options": [
+        {
+          "value": "top-center-mobile",
+          "label": "Top"
+        },
+        {
+          "value": "middle-center-mobile",
+          "label": "Middle"
+        },
+        {
+          "value": "bottom-center-mobile",
+          "label": "Bottom"
+        }
+      ],
+      "default": "middle-center-mobile"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment_mobile",
+      "label": "Content alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Advanced"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_preload_image",
+      "label": "Enable preload image",
+      "info": "If this section is visible when the page loads, enabling this setting can reduce LCP and may improve site speed scores."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "subheading",
+      "name": "Subheading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "subheading",
+          "default": "Add a tagline",
+          "label": "Subheading"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "default": "Image with text overlay",
+          "label": "Heading",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "hd1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Use this text to share information about your brand with your customers. <br>Describe a product, share announcements, or welcome customers to your store.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "name": "Button",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--primary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image with text overlay",
+      "blocks": [
+        {
+          "type": "subheading"
+        },
+        {
+          "type": "heading"
+        },
+        {
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  }
+}
+{% endschema %}

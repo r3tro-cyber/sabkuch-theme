@@ -1,0 +1,702 @@
+{{ 'component-lookbook-card.css' | asset_url | stylesheet_tag }}
+{{ 'section-lookbook-banner.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'lookbook-icon.js' | asset_url }}" defer="defer"></script>
+{%- liquid
+  assign button_style = section.settings.button_style
+  assign button_label = section.settings.button_label
+  assign button_link = section.settings.button_link
+  assign button_icon = section.settings.button_icon
+
+  assign image = section.settings.image
+  assign image_ratio = image.aspect_ratio | default: 2.333
+
+  assign image_mobile = section.settings.image_mobile
+  if image_mobile == blank
+    assign image_mobile = image
+  endif
+  assign image_mobile_aspect_ratio = image_mobile.aspect_ratio | default: 2.333
+
+  assign loading = 'lazy'
+  assign fetchpriority = 'low'
+  if section.index < 2
+    assign loading = 'eager'
+    assign fetchpriority = 'high'
+  endif
+
+  assign motion_delay = 50
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} .page-width--full {
+    --page-padding: 0;
+  }
+{% endstyle %}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div
+  class="section section-{{ section.id }} section--padding section--lookbook-banner color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  data-id="{{ section.id }}"
+>
+  {% render 'section-heading',
+    section_settings: section.settings,
+    description_size: section.settings.description_size,
+    button_visible: true,
+    button_link: button_link,
+    button_style: button_style,
+    button_label: button_label,
+    button_icon: button_icon,
+    motion_delay: motion_delay,
+    custom_css_class: 'page-width'
+  %}
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    <div class="lookbook-card relative">
+      <div
+        class="media"
+        style="--aspect-ratio:{{ image_ratio }};--aspect-ratio-mobile:{{ image_mobile_aspect_ratio }};"
+      >
+        <motion-element class="media-wrapper block" data-motion="zoom-out-sm">
+          {% if image == blank %}
+            {% liquid
+              assign placeholder_svg = 'placeholder-svg'
+              if section.settings.image_mobile != blank
+                assign placeholder_svg = placeholder_svg | append: ' hidden md:block'
+              endif
+            %}
+            {{ 'lifestyle-1' | placeholder_svg_tag: placeholder_svg }}
+          {% endif %}
+          {% if image != blank or section.settings.image_mobile != blank %}
+            <picture class="block{% if image == blank %} md:hidden{% endif %}">
+              {%- if section.settings.image_mobile != blank -%}
+                <source
+                  media="(max-width: 767px)"
+                  srcset="{{ section.settings.image_mobile | image_url: width: '400x' }} 400w, {{ section.settings.image_mobile | image_url: width: '600x' }} 600w, {{ section.settings.image_mobile | image_url: width: '800x' }} 800w, {{ section.settings.image_mobile | image_url: width: '1000x' }} 1000w"
+                  width="{{ section.settings.image_mobile.width }}"
+                  height="{{ section.settings.image_mobile.height }}"
+                >
+              {%- endif %}
+              {% liquid
+                if image == blank
+                  assign image = section.settings.image_mobile
+                endif
+                assign image_height = image.width | divided_by: image.aspect_ratio | round
+                assign alt = image.alt | default: shop.name | escape
+              %}
+              {{
+                image
+                | image_url: width: 3200
+                | image_tag:
+                  loading: loading,
+                  fetchpriority: fetchpriority,
+                  width: image.width,
+                  sizes: '100vw',
+                  height: image_height,
+                  widths: '300,400,500,600,700,800,900,1000,1200,1400,1600,1800,2000,2200,2400,2600,2800,3000,3200',
+                  alt: alt,
+                  class: 'motion-reduce w-full'
+              }}
+            </picture>
+          {%- endif %}
+        </motion-element>
+      </div>
+
+      {%- liquid
+        assign lookbook_icon_index = 0
+      -%}
+      {%- for block in section.blocks -%}
+        {%- capture hotspot_style -%}
+        --top: {{ block.settings.top }}%; --left: {{ block.settings.left }}%;
+        {%- if image_mobile != blank -%}
+          --top-mobile: {{ block.settings.top_mobile }}%; --left-mobile: {{ block.settings.left_mobile }}%;
+        {%- endif -%}
+        {%- endcapture -%}
+        {% render 'lookbook-icon',
+          section_settings: section.settings,
+          block: block,
+          hotspot_style: hotspot_style,
+          icon_color: section.settings.icon_color,
+          icon_style: section.settings.icon_style,
+          card_color_scheme: section.settings.card_color_scheme,
+          lookbook_icon_index: lookbook_icon_index
+        %}
+        {% assign lookbook_icon_index = lookbook_icon_index | plus: 1 %}
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Banner with hotspots",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "center",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Banner with hotspots",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "description_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--underline"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Banner settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "Mobile image"
+    },
+    {
+      "type": "select",
+      "id": "icon_style",
+      "label": "Icon style",
+      "options": [
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "dot",
+          "label": "Dot"
+        }
+      ],
+      "default": "plus"
+    },
+    {
+      "type": "select",
+      "id": "icon_color",
+      "label": "Icon color",
+      "options": [
+        {
+          "value": "light",
+          "label": "Light"
+        },
+        {
+          "value": "dark",
+          "label": "Dark"
+        }
+      ],
+      "default": "dark"
+    },
+    {
+      "type": "header",
+      "content": "Card settings"
+    },
+    {
+      "type": "color_scheme",
+      "id": "card_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "hotspot",
+      "name": "Hotspot",
+      "settings": [
+        {
+          "type": "header",
+          "content": "General"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "header",
+          "content": "Content settings"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Hotspot"
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Text",
+          "default": "<p>Each piece is built for longevity, ensuring durability, repairability, flexibility, and resale value.</p>"
+        },
+        {
+          "type": "header",
+          "content": "Hotspot"
+        },
+        {
+          "type": "range",
+          "id": "top",
+          "label": "Vertical alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 9
+        },
+        {
+          "type": "range",
+          "id": "left",
+          "label": "Horizontal alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 63
+        },
+        {
+          "type": "header",
+          "content": "Hotspot on mobile"
+        },
+        {
+          "type": "paragraph",
+          "content": "Adjust hotspot position on mobile if image mobile available."
+        },
+        {
+          "type": "range",
+          "id": "top_mobile",
+          "label": "Vertical alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 9
+        },
+        {
+          "type": "range",
+          "id": "left_mobile",
+          "label": "Horizontal alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 63
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Banner with hotspots",
+      "blocks": [
+        {
+          "type": "hotspot",
+          "settings": {
+            "top": 45,
+            "left": 30,
+            "top_mobile": 45,
+            "left_mobile": 30
+          }
+        },
+        {
+          "type": "hotspot",
+          "settings": {
+            "top": 50,
+            "left": 70,
+            "top_mobile": 50,
+            "left_mobile": 70
+          }
+        },
+        {
+          "type": "hotspot",
+          "settings": {
+            "top": 62,
+            "left": 43,
+            "top_mobile": 62,
+            "left_mobile": 43
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

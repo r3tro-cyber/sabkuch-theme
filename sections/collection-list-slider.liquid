@@ -1,0 +1,740 @@
+<script src="{{ 'collection-list.js' | asset_url }}" defer="defer"></script>
+{%- liquid
+  assign button_style = section.settings.button_style
+  assign button_label = section.settings.button_label
+  assign button_link = section.settings.button_link
+  assign button_icon = section.settings.button_icon
+
+  assign card_has_bg = false
+  if section.settings.color_scheme != section.settings.card_color_scheme
+    assign card_has_bg = true
+  endif
+-%}
+
+{%- style -%}
+  .section-{{ section.id }} {
+    --swiper-navigation-size: 3.8rem;
+  }
+  .section-{{ section.id }} .swiper-slide {
+    width: var(--slide-width, 12rem);
+  }
+  @media (max-width: 767px) {
+    .section-{{ section.id }} .swiper-slide {
+      --slide-width: 9rem;
+    }
+    .section-{{ section.id }} [data-mobile-layout="horizontal"] .swiper-slide {
+      --slide-width: 16rem;
+    }
+    .section-{{ section.id }} .swipe-mobile__inner {
+      --f-column-gap: .8rem;
+    }
+  }
+  @media (min-width: 1280px) {
+    .section-{{ section.id }} .swiper-slide {
+      width: var(--slide-width, 13rem);
+    } 
+  }
+{%- endstyle -%}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div
+  class="section section-{{ section.id }} section--padding collection-list-slider color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    <div class="section__wrapper">
+      {% render 'section-heading',
+        section_settings: section.settings,
+        description_size: section.settings.text_size,
+        button_visible: true,
+        button_link: button_link,
+        button_style: button_style,
+        button_label: button_label,
+        button_icon: button_icon
+      %}
+      <div class="section__content swiper-show-nav-on-hover relative">
+        <collection-list
+          class="block swiper swipe-mobile swipe-mobile--auto-cols"
+          data-section-id="{{ section.id }}"
+          data-card-style="{{ section.settings.card_style }}"
+          data-item-size="{{ section.settings.carousel_item_size }}"
+          data-columns-desktop="{{ section.settings.columns_desktop }}"
+          data-mobile-layout="{{ section.settings.mobile_layout }}"
+        >
+          <div class="collection-list__items swiper-wrapper swipe-mobile__inner">
+            {%- for block in section.blocks -%}
+              {%- liquid
+                assign collection = collections[block.settings.collection]
+                assign title = block.settings.title
+              -%}
+              <div
+                class="f-column swiper-slide"
+                {{ block.shopify_attributes }}
+                data-index="{{ forloop.index0 }}"
+              >
+                {% render 'card-collection',
+                  collection: collection,
+                  featured_image: block.settings.image,
+                  title: title,
+                  image_ratio: section.settings.card_image_ratio,
+                  has_bg: card_has_bg,
+                  rounded_image: section.settings.rounded_card_image,
+                  card_style: section.settings.card_style,
+                  color_scheme: section.settings.card_color_scheme,
+                  image_width: section.settings.card_image_width,
+                  image_padding: section.settings.card_image_padding,
+                  mobile_layout: section.settings.mobile_layout,
+                  heading_size: section.settings.card_heading_size
+                %}
+              </div>
+            {%- endfor -%}
+          </div>
+        </collection-list>
+        <div class="swiper-controls swiper-controls--nav-floating hidden md:flex color-{{ section.settings.carousel_control_color_scheme }}">
+          <button
+            class="swiper-button swiper-button--drop-shadow swiper-button-prev btn"
+            name="previous"
+            aria-label="{{ 'general.slider.previous_slide' | t }}"
+          >
+            <span class="btn__text">{% render 'icon-caret-left', size: 'small' %}</span>
+          </button>
+          <button
+            class="swiper-button swiper-button--drop-shadow swiper-button-next btn"
+            name="next"
+            aria-label="{{ 'general.slider.next_slide' | t }}"
+          >
+            <span class="btn__text">{% render 'icon-caret-right', size: 'small' %}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Collection list slider",
+  "tag": "section",
+  "class": "section-collection-list-slider",
+  "max_blocks": 18,
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "center",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Collections",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--underline"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Card settings"
+    },
+    {
+      "type": "color_scheme",
+      "id": "card_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "Style",
+      "options": [
+        {
+          "value": "standard",
+          "label": "Standard"
+        },
+        {
+          "value": "card",
+          "label": "Card"
+        }
+      ],
+      "default": "standard"
+    },
+    {
+      "type": "select",
+      "id": "card_heading_size",
+      "label": "Heading size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "h6",
+          "label": "Heading - Extra extra small"
+        },
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "card_image_ratio",
+      "label": "Image ratio",
+      "default": "1/1",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "1/1",
+          "label": "Square (1:1)"
+        },
+        {
+          "value": "3/4",
+          "label": "Portrait (3:4)"
+        },
+        {
+          "value": "4/3",
+          "label": "Landscape (4:3)"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "card_image_width",
+      "label": "Image width",
+      "options": [
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "select",
+      "id": "card_image_padding",
+      "label": "Image padding",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        }
+      ],
+      "default": "none",
+      "visible_if": "{{ section.settings.card_style == 'card' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "rounded_card_image",
+      "label": "Show rounded image",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "Mobile layout",
+      "options": [
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        }
+      ],
+      "default": "vertical",
+      "visible_if": "{{ section.settings.card_style == 'card' }}"
+    },
+    {
+      "type": "header",
+      "content": "Carousel settings"
+    },
+    {
+      "type": "select",
+      "id": "carousel_item_size",
+      "label": "Item size",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Auto"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed"
+        }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "default": 6,
+      "label": "Number of columns on desktop",
+      "visible_if": "{{ section.settings.carousel_item_size == 'fixed' }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "carousel_control_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "featured_collection",
+      "name": "Collection",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "info": "Leave blank to use collection's title"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection list slider",
+      "blocks": [
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        },
+        {
+          "type": "featured_collection"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

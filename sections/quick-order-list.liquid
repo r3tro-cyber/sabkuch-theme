@@ -1,0 +1,624 @@
+{{ 'quick-order-list.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'quick-order-list.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign button_style = section.settings.button_style
+  assign button_label = section.settings.button_label
+  assign button_link = section.settings.button_link
+  assign button_icon = section.settings.button_icon
+-%}
+{% style %}
+  .section-{{ section.id }} {
+    --section-padding-top: {{ section.settings.padding_top }}px;
+    --section-padding-bottom: {{ section.settings.padding_bottom }}px;
+  }
+{% endstyle %}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div class="quick-order-list section section--padding section-{{ section.id }} color-{{ section.settings.color_scheme }}">
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    {% render 'section-heading',
+      section_settings: section.settings,
+      button_label: button_label,
+      button_link: button_link,
+      button_style: button_style,
+      button_icon: button_icon,
+      button_visible: true
+    %}
+
+    <div class="section__content">
+      {%- assign items_in_cart = cart | line_items_for: product | sum: 'quantity' -%}
+      <quick-order-list-wrapper
+        class="block no-js-hidden"
+        data-section-id="{{ section.id }}"
+        id="MainQuickOrderList-{{ section.id }}"
+      >
+        <form
+          action="{{ routes.cart_update_url }}"
+          method="post"
+          id="QuickOrderList-{{ section.id }}"
+          is="quick-order-list"
+          data-section-id="{{ section.id }}"
+          data-product-id="{{ product.id }}"
+          data-product-url="{{ product.url }}"
+          class="flex flex-col lg:flex-row"
+        >
+          <div class="quick-order-list__container flex-1{% if product.has_only_default_variant or product.variants.size == 1 %} has-only-default-variant{% endif %}">
+            <table class="w-full quick-order-list__table">
+              <caption class="visually-hidden">
+                {{ 'general.cart.title' | t }}
+              </caption>
+              <thead>
+                <tr>
+                  <th class="text-left hidden md:table-cell" scope="col">
+                    {%- if product.has_only_default_variant -%}
+                      {{ 'sections.quick_order_list.product' | t }}
+                    {%- else -%}
+                      {{ 'sections.quick_order_list.variant' | t }}
+                    {%- endif -%}
+                  </th>
+                  <th
+                    class="hidden md:table-cell text-left"
+                    scope="col"
+                  >
+                    {{ 'products.product.quantity.label' | t }}
+                  </th>
+                  <th
+                    class="hidden lg:table-cell text-right"
+                    scope="col"
+                  >
+                    {{ 'products.product.price.label' | t }}
+                  </th>
+                  <th class="text-right hidden md:table-cell" scope="col">
+                    {%- if product.has_only_default_variant -%}
+                      {{ 'sections.quick_order_list.product_total' | t }}
+                    {%- else -%}
+                      {{ 'sections.quick_order_list.variant_total' | t }}
+                    {%- endif -%}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {%- if product.has_only_default_variant -%}
+                  {%- render 'quick-order-list-row',
+                    section_id: section.id,
+                    product_id: product.id,
+                    item: product,
+                    image: product.featured_image,
+                    sku: product.selected_or_first_available_variant.sku,
+                    variant: product.selected_or_first_available_variant,
+                    show_image: section.settings.show_image,
+                    show_sku: section.settings.show_sku
+                  -%}
+                {%- else -%}
+                  {%- for variant in product.variants -%}
+                    {%- render 'quick-order-list-row',
+                      section_id: section.id,
+                      product_id: product.id,
+                      item: variant,
+                      image: variant.image,
+                      sku: variant.sku,
+                      variant: variant,
+                      show_image: section.settings.show_image,
+                      show_sku: section.settings.show_sku
+                    -%}
+                  {%- endfor -%}
+                {%- endif -%}
+              </tbody>
+            </table>
+          </div>
+          {%- if product.has_only_default_variant or product.variants.size == 1 -%}
+            <div class="quick-order-list__error" hidden>
+              <div class="quick-order-list-error__message alert alert--error"></div>
+            </div>
+          {%- else -%}
+            <div class="quick-order-list__total">
+              <div class="sticky-element quick-order-list-total__info flex flex-col gap-3">
+                <div class="quick-order-list__total-items text-center text-subtext flex gap-1">
+                  <span>{{ items_in_cart }}</span>
+                  <p class="m-0">{{ 'sections.quick_order_list.total_items' | t }}</p>
+                </div>
+                <div class="quick-order-list-total__price">
+                  <div class="totals__product-total flex items-center justify-between gap-3">
+                    <p class="totals__subtotal h5">{{ 'sections.quick_order_list.product_total' | t }}</p>
+                    <span class="totals__subtotal-value font-body-bolder h5">
+                      {{ cart | line_items_for: product | sum: 'original_line_price' | money }}
+                    </span>
+                  </div>
+                  <small class="tax-note text-subtext rte">
+                    {%- liquid
+                      if cart.taxes_included and shop.shipping_policy.body != blank
+                        echo 'sections.cart.taxes_included_and_shipping_policy_html' | t: link: shop.shipping_policy.url
+                      elsif cart.taxes_included
+                        echo 'sections.cart.taxes_included_but_shipping_at_checkout' | t
+                      elsif shop.shipping_policy.body != blank
+                        echo 'sections.cart.taxes_and_shipping_policy_at_checkout_html' | t: link: shop.shipping_policy.url
+                      else
+                        echo 'sections.cart.taxes_and_shipping_at_checkout' | t
+                      endif
+                    -%}
+                  </small>
+                </div>
+                <div class="quick-order-list-total__column">
+                  <div class="quick-order-list-buttons flex flex-col items-center gap-2">
+                    <a
+                      href="{{ routes.cart_url }} "
+                      class="quick-order-list__button btn btn--primary w-full"
+                    >
+                      <span class="quick-order-list__button-text btn__text">
+                        {{- 'sections.quick_order_list.view_cart' | t -}}
+                      </span>
+                    </a>
+                    <div class="variant-remove-total">
+                      <div
+                        id="Loader-{{ section.id }}-all"
+                        class="quick-order-list__loader flex items-center justify-center relative btn-remove"
+                        hidden
+                      >
+                        {% render 'loading-spinner' %}
+                      </div>
+                      <quick-order-list-remove-all
+                        data-action="confirm"
+                        {% if items_in_cart == 0 %}
+                          hidden
+                        {% endif %}
+                        class="quick-order-list__remove"
+                      >
+                        <button class="btn btn--link text-subtext">
+                          <span class="text-sm">{{ 'sections.quick_order_list.remove_all' | t }}</span>
+                        </button>
+                      </quick-order-list-remove-all>
+                    </div>
+                  </div>
+                </div>
+                <div class="quick-order-list__error" hidden>
+                  <div class="quick-order-list-error__message alert alert--error"></div>
+                </div>
+              </div>
+              <div class="sticky-element quick-order-list-total__confirmation flex flex-col gap-3" hidden>
+                <span class="text-subtext">
+                  {{- 'sections.quick_order_list.remove_all_items_confirmation' | t: quantity: items_in_cart -}}
+                </span>
+                <div class="flex gap-3 justify-between items-center">
+                  <quick-order-list-remove-all class="block flex-1" data-action="remove">
+                    <button class="btn btn--primary w-full" type="button">
+                      <span class="btn__text">{{ 'sections.quick_order_list.remove_all' | t }}</span>
+                    </button>
+                  </quick-order-list-remove-all>
+                  <quick-order-list-remove-all class="block flex-1" data-action="cancel">
+                    <button class="btn btn--outline w-full" type="button">
+                      <span class="btn__text">{{ 'sections.quick_order_list.cancel' | t }}</span>
+                    </button>
+                  </quick-order-list-remove-all>
+                </div>
+              </div>
+            </div>
+          {%- endif -%}
+        </form>
+      </quick-order-list-wrapper>
+
+      <noscript>
+        <div class="alert alert--warning blocks-radius text-center h5">
+          {{ 'onboarding.no_script_alert' | t }}
+        </div>
+      </noscript>
+    </div>
+  </div>
+</div>
+
+{%- schema -%}
+{
+  "name": "Quick order list",
+  "limit": 1,
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "Show image",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sku",
+      "label": "Show sku",
+      "default": true
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Quick order list",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--underline"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Quick order list"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  }
+}
+{%- endschema -%}

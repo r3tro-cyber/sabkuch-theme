@@ -1,0 +1,569 @@
+{{ 'component-card-img-with-product.css' | asset_url | stylesheet_tag }}
+{{ 'section-featured-products-tab.css' | asset_url | stylesheet_tag }}
+
+{%- style -%}
+  .section-{{ section.id }} {
+    --section-padding-top: {{ section.settings.padding_top }}px;
+    --section-padding-bottom: {{ section.settings.padding_bottom }}px;
+    --f-columns-mobile: 1;
+    --f-columns-md: 2;
+  }
+{%- endstyle -%}
+{%- render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+-%}
+<div
+  class="section section-{{ section.id }} featured-products-tab section--padding color-{{ section.settings.color_scheme }}"
+  data-id="{{ section.id }}"
+>
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    {%- if section.blocks.size > 0 -%}
+      <tabs-component class="tabs" data-scroll-to-active-tab="true">
+        <div class="tabs__header tabs__header_vertical">
+          <div class="sticky-element z-10 lg:flex flex-col">
+            {%- render 'section-heading', section_settings: section.settings, custom_css_class: 'w-full' -%}
+            {%- if section.settings.button_label != blank -%}
+              <motion-element
+                class="section__header--buttons rich-text__button block"
+                data-motion="fade-up"
+              >
+                {% render 'button',
+                  button_style: section.settings.button_style,
+                  button_link: section.settings.button_link,
+                  button_label: section.settings.button_label,
+                  button_icon: section.settings.button_icon
+                %}
+              </motion-element>
+            {%- endif -%}
+            <div
+              class="tabs__nav tabs__nav-js swipe-mobile swipe-mobile--auto-cols no-js-hidden"
+              role="tablist"
+            >
+              <motion-element class="block tabs__nav-inner" data-motion="fade-up">
+                {%- for block in section.blocks -%}
+                  {%- liquid
+                    if block.settings.title != blank
+                      assign tab_name = block.settings.title
+                    else
+                      assign tab_name = 'Tab ' | append: forloop.index
+                    endif
+                  -%}
+                  <button
+                    class="tabs__tab focus-inset btn btn--underline"
+                    role="tab"
+                    id="{{- block.id -}}"
+                    {{ block.shopify_attributes }}
+                  >
+                    <span class="h5">{{- tab_name -}}</span>
+                  </button>
+                {%- endfor -%}
+              </motion-element>
+            </div>
+          </div>
+        </div>
+        <div class="tabs__panel flex-1">
+          {%- for block in section.blocks -%}
+            {%- liquid
+              assign products = blank
+              assign products_to_show = false
+              if block.settings.products != blank
+                assign products = block.settings.products
+              endif
+              if products.count > 2
+                assign products_to_show = true
+              endif
+            -%}
+            <div
+              class="tabs__content tabs__content-{{ block.id }}"
+              id="tab-{{ block.id }}"
+              data-index="{{ forloop.index0 }}"
+              role="tabpanel"
+              {%- unless forloop.first -%}
+                hidden
+              {%- endunless -%}
+            >
+              <div class="block{% if section.settings.swipe_on_mobile %} swipe-mobile swipe-mobile--1-cols{% endif %}">
+                <grid-list class="f-grid{% if products_to_show %} f-masonry{% endif %} f-grid-2-cols f-grid--gap-2xs f-grid--row-gap-inherit{% if section.settings.swipe_on_mobile %} swipe-mobile__inner{% endif %}">
+                  {%- for product in block.settings.products -%}
+                    <div class="f-column">
+                      {%- liquid
+                        assign image_ratio = section.settings.pcard_image_ratio
+                        assign product_showcase_image = product.metafields.sabkuchtheme.showcase_image.value
+                        assign product_showcase_title = product.metafields.sabkuchtheme.showcase_title.value
+                        assign featured_media = product.featured_media
+                        if product_showcase_image == blank
+                          assign product_showcase_image = featured_media
+                        endif
+                      -%}
+                      {%- render 'card-image-with-product',
+                        product: product,
+                        image: product_showcase_image,
+                        image_ratio: image_ratio,
+                        heading: product_showcase_title,
+                        heading_size: 'h3',
+                        color_scheme: block.settings.color_scheme,
+                        button_label: 'shop',
+                        button_style: 'btn--primary'
+                      -%}
+                    </div>
+                  {% else %}
+                    {%- for i in (1..2) -%}
+                      <div class="f-column">
+                        {%- render 'card-image-with-product',
+                          image_ratio: section.settings.pcard_image_ratio,
+                          color_scheme: block.settings.color_scheme
+                        -%}
+                      </div>
+                    {%- endfor -%}
+                  {%- endfor -%}
+                </grid-list>
+              </div>
+            </div>
+          {%- endfor -%}
+        </div>
+      </tabs-component>
+    {%- endif -%}
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Featured products tab",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "label": "Container",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Featured products tab",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--primary"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Product cards"
+    },
+    {
+      "type": "select",
+      "id": "pcard_image_ratio",
+      "label": "Image ratio",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "1/1",
+          "label": "Square (1:1)"
+        },
+        {
+          "value": "3/4",
+          "label": "Portrait (3:4)"
+        },
+        {
+          "value": "4/3",
+          "label": "Landscape (4:3)"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "swipe_on_mobile",
+      "default": true,
+      "label": "Enable swipe on mobile"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "label": "Show divider",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "label": "Divider width",
+      "default": "fixed",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "Tab",
+      "settings": [
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Tab name"
+        },
+        {
+          "type": "product_list",
+          "id": "products",
+          "label": "Products",
+          "limit": 6
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured products tab",
+      "blocks": [
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Product list 1"
+          }
+        },
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Product list 2"
+          }
+        },
+        {
+          "type": "tab",
+          "settings": {
+            "title": "Product list 3"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

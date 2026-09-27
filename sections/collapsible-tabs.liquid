@@ -1,0 +1,1595 @@
+{%- liquid
+  assign header_layout = section.settings.header_layout
+  assign button_style = section.settings.button_style
+  assign button_label = section.settings.button_label
+  assign button_link = section.settings.button_link
+  assign button_icon = section.settings.button_icon
+
+  assign section_css_class = ''
+  assign col_alignment_class = ''
+  assign col_content_width = 100
+
+  assign side_button = true
+
+  if header_layout == 'standing-column'
+    assign header_layout = 'vertical'
+    assign side_button = false
+  endif
+
+  assign image_block = section.blocks | where: 'type', 'image_card' | first
+  if image_block
+    assign section_css_class = section_css_class | append: ' collapsible-tabs__has-image'
+    assign section_css_class = section_css_class | append: ' collapsible-tabs__image-position-' | append: image_block.settings.image_position | default: 'left'
+
+    assign image_vertical_alignment = image_block.settings.alignment | default: 'center'
+    assign col_alignment_class = col_alignment_class | append: ' justify-' | append: image_vertical_alignment
+
+    assign col_image_width = image_block.settings.image_width
+    assign col_content_width = col_content_width | minus: col_image_width
+  endif
+
+  assign item_font_family = section.settings.item_heading_font | default: 'body'
+  assign item_heading_size = section.settings.item_heading_size | default: 'h6'
+  assign item_trigger_class = ' font-' | append: item_font_family | append: ' ' | append: item_heading_size
+  assign item_icon_size = section.settings.item_icon_size | default: 'extra-large'
+-%}
+{{ 'section-collapsible-tabs.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'collapsible-tabs.js' | asset_url }}" defer="defer"></script>
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+<div
+  class="section section-{{ section.id }} section--padding section--collapsible-tabs section-header-{{ section.settings.header_layout }} color-{{ section.settings.color_scheme }}{{ section_css_class }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  data-id="{{ section.id }}"
+>
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    <div class="section__wrapper">
+      {% render 'section-heading',
+        section_settings: section.settings,
+        header_layout: header_layout,
+        button_visible: true,
+        button_link: button_link,
+        button_style: button_style,
+        button_label: button_label,
+        button_icon: button_icon,
+        description_size: section.settings.text_size,
+        side_button: side_button
+      %}
+      <div class="section__content">
+        <div class="collapsible-tabs__wrapper f-flex f-grid--gap-{{ section.settings.column_gap }} f-grid--row-gap-{{ section.settings.row_gap }}">
+          {%- if image_block -%}
+            <div
+              class="collapsible-tabs__image-col f-column w-full flex flex-col md:order-{% if image_block.settings.desktop_image_position == 'right' %}last{% else %}first{% endif %}{% if image_block.settings.order_first %} order-first{% else %} order-last{% endif %}{{ col_alignment_class }}"
+              style="--col-width: {{ col_image_width }}%;"
+              {{ image_block.shopify_attributes }}
+            >
+              {% render 'card-image',
+                color_scheme: image_block.settings.color_scheme,
+                link: image_block.settings.card_link,
+                image: image_block.settings.image,
+                image_mobile: image_block.settings.image_mobile,
+                image_ratio: image_block.settings.image_ratio,
+                image_overlay_opacity: image_block.settings.image_overlay_opacity,
+                heading: image_block.settings.heading,
+                highlight_style: image_block.settings.highlight_style,
+                highlight_font_style: image_block.settings.highlight_font_style,
+                highlight_style_color: image_block.settings.highlight_style_color,
+                highlight_text_color: image_block.settings.highlight_text_color,
+                heading_size: image_block.settings.heading_size,
+                subheading: image_block.settings.subheading,
+                subheading_style: image_block.settings.subheading_style,
+                description: image_block.settings.description,
+                button_label: image_block.settings.button_label,
+                button_style: image_block.settings.button_style,
+                button_icon: image_block.settings.button_icon,
+                rich_text_size: image_block.settings.content_gap,
+                content_spacing: image_block.settings.content_spacing,
+                content_position: image_block.settings.content_position,
+                content_alignment: image_block.settings.content_alignment,
+                section_index: section.index,
+                forloop_index: 1,
+                heading_size_custom: image_block.settings.heading_size_custom,
+                heading_size_mobile: image_block.settings.heading_size_mobile
+              %}
+            </div>
+          {%- endif -%}
+          <div
+            class="collapsible-tabs__content-col f-column w-full flex flex-col items-center {{ col_alignment_class }}"
+            style="--col-width: {{ col_content_width }}%;"
+          >
+            <collapsible-tabs
+              class="block w-full accordion-parent"
+              data-color-scheme="color-{{ section.settings.item_color_scheme }}"
+            >
+              {%- for block in section.blocks -%}
+                {%- case block.type -%}
+                  {%- when 'collapsible_item' -%}
+                    <div
+                      class="accordion-item accordion-{{ section.settings.item_style }}{% if section.settings.item_style == 'card' %} blocks-radius{% endif %}"
+                      {{ block.shopify_attributes }}
+                    >
+                      <details
+                        class="accordion-details"
+                        is="accordion-group"
+                        {% if block.settings.open %}
+                          open
+                          aria-expanded="true"
+                        {% else %}
+                          aria-expanded="false"
+                        {% endif %}
+                      >
+                        <summary class="accordion-details__summary flex items-center justify-between focus-inset gap-2">
+                          <div class="flex items-center gap-2">
+                            {% if block.settings.icon != 'none' %}
+                              {% render 'icons', icon: block.settings.icon, size: item_icon_size %}
+                            {%- endif -%}
+                            <h2 class="{{ item_trigger_class }} inline-richtext">{{ block.settings.heading }}</h2>
+                          </div>
+                          {%- render 'icon-plus-toggle' -%}
+                        </summary>
+                        <div class="accordion-details__content rte{% if block.settings.use_subtext_color %} text-subtext{% endif %}">
+                          {{ block.settings.content }}
+                          {{ block.settings.custom_liquid }}
+                          {{ block.settings.page.content }}
+                        </div>
+                      </details>
+                    </div>
+                  {%- when 'heading' -%}
+                    {%- if block.settings.sub_heading != blank or block.settings.heading != blank -%}
+                      <div class="block-heading rich-text" {{ block.shopify_attributes }}>
+                        {%- if block.settings.sub_heading != blank -%}
+                          <div class="rich-text__subheading text-subheading">{{ block.settings.sub_heading }}</div>
+                        {%- endif -%}
+                        {%- if block.settings.heading != blank -%}
+                          <h2 class="rich-text__heading {{ block.settings.heading_size }}">
+                            {% render 'highlight-text',
+                              hl_text: block.settings.heading,
+                              hl_style: block.settings.highlight_style,
+                              hl_font_style: block.settings.highlight_font_style,
+                              hl_style_color: block.settings.highlight_style_color,
+                              hl_text_color: block.settings.highlight_text_color
+                            %}
+                          </h2>
+                        {%- endif -%}
+                      </div>
+                    {%- endif -%}
+                {%- endcase -%}
+              {%- endfor -%}
+            </collapsible-tabs>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Collapsible tabs",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "narrow",
+          "label": "Narrow"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "type": "select",
+      "id": "header_layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        },
+        {
+          "value": "standing-column",
+          "label": "Standing column"
+        }
+      ],
+      "default": "vertical"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Collapsible tabs",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--underline",
+          "label": "Underline button"
+        },
+        {
+          "value": "btn--plain",
+          "label": "Plain button"
+        }
+      ],
+      "default": "btn--primary"
+    },
+    {
+      "type": "select",
+      "id": "button_icon",
+      "label": "Button icon",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "caret-right",
+          "label": "Caret right"
+        },
+        {
+          "value": "caret-left",
+          "label": "Caret left"
+        },
+        {
+          "value": "arrow-right",
+          "label": "Arrow right"
+        },
+        {
+          "value": "arrow-left",
+          "label": "Arrow left"
+        },
+        {
+          "value": "close",
+          "label": "Close"
+        },
+        {
+          "value": "home",
+          "label": "Home"
+        },
+        {
+          "value": "search",
+          "label": "Search"
+        },
+        {
+          "value": "hamburger",
+          "label": "Hamburger"
+        },
+        {
+          "value": "pencil",
+          "label": "Pencil"
+        },
+        {
+          "value": "plus",
+          "label": "Plus"
+        },
+        {
+          "value": "cart",
+          "label": "Cart"
+        },
+        {
+          "value": "account",
+          "label": "Account"
+        },
+        {
+          "value": "sign-in",
+          "label": "Sign in"
+        },
+        {
+          "value": "chat",
+          "label": "Chat"
+        },
+        {
+          "value": "download",
+          "label": "Download"
+        },
+        {
+          "value": "upload",
+          "label": "Upload"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "play-outline",
+          "label": "Play"
+        },
+        {
+          "value": "pause",
+          "label": "Pause"
+        },
+        {
+          "value": "stop",
+          "label": "Stop"
+        },
+        {
+          "value": "speaker",
+          "label": "Speaker"
+        },
+        {
+          "value": "setting",
+          "label": "Setting"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "Image card settings"
+    },
+    {
+      "type": "select",
+      "id": "column_gap",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "large",
+      "label": "Column gap"
+    },
+    {
+      "type": "select",
+      "id": "row_gap",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Same as the column gap"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "inherit",
+      "label": "Row gap"
+    },
+    {
+      "type": "header",
+      "content": "Collapsible tab"
+    },
+    {
+      "type": "select",
+      "id": "item_style",
+      "label": "Style",
+      "default": "standard",
+      "options": [
+        {
+          "value": "standard",
+          "label": "Standard"
+        },
+        {
+          "value": "card",
+          "label": "Card"
+        }
+      ]
+    },
+    {
+      "type": "color_scheme",
+      "id": "item_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "select",
+      "id": "item_heading_font",
+      "label": "Font family",
+      "default": "heading",
+      "options": [
+        {
+          "value": "body",
+          "label": "Body font"
+        },
+        {
+          "value": "heading",
+          "label": "Headings font"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "item_heading_size",
+      "label": "Heading size",
+      "default": "h4",
+      "options": [
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "item_icon_size",
+      "label": "Icon size",
+      "options": [
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "extra-medium",
+          "label": "Extra medium"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "extra-large"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "label": "Divider width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collapsible_item",
+      "name": "Collapsible tab",
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Collapsible tab heading"
+        },
+        {
+          "type": "richtext",
+          "id": "content",
+          "label": "Tab content",
+          "default": "<p>Fill in the text content of the collapsible item here. You can provide details and explanation for the question here.</p>"
+        },
+        {
+          "type": "liquid",
+          "id": "custom_liquid",
+          "label": "Custom liquid"
+        },
+        {
+          "type": "page",
+          "id": "page",
+          "label": "Tab content from page"
+        },
+        {
+          "type": "checkbox",
+          "id": "open",
+          "label": "Default open"
+        },
+        {
+          "type": "checkbox",
+          "id": "use_subtext_color",
+          "label": "Use subtext color"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "sub_heading",
+          "label": "Subheading"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Collapsible tabs",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "image_card",
+      "name": "Image card",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "desktop_image_position",
+          "label": "Desktop image position",
+          "default": "left",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "id": "image_width",
+          "label": "Desktop image width",
+          "default": 50,
+          "min": 30,
+          "max": 70,
+          "step": 1,
+          "unit": "%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Image settings"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "default": "adapt",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "id": "image_overlay_opacity",
+          "min": 0,
+          "max": 100,
+          "step": 2,
+          "unit": "%",
+          "label": "Image overlay opacity",
+          "default": 0
+        },
+        {
+          "type": "header",
+          "content": "Content settings"
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Content position",
+          "options": [
+            {
+              "group": "Standard",
+              "label": "Top left",
+              "value": "top-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Top center",
+              "value": "top-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Top right",
+              "value": "top-right"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle left",
+              "value": "middle-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle center",
+              "value": "middle-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle right",
+              "value": "middle-right"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom left",
+              "value": "bottom-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom center",
+              "value": "bottom-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom right",
+              "value": "bottom-right"
+            },
+            {
+              "group": "Split",
+              "label": "Middle content",
+              "value": "split-middle-content"
+            },
+            {
+              "group": "Split",
+              "label": "Bottom button",
+              "value": "split-bottom-button"
+            },
+            {
+              "group": "Split",
+              "label": "Top subheading",
+              "value": "split-top-subheading"
+            }
+          ],
+          "default": "top-center"
+        },
+        {
+          "type": "select",
+          "id": "content_alignment",
+          "label": "Content alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_spacing",
+          "label": "Content spacing",
+          "default": "medium",
+          "options": [
+            {
+              "value": "extra-small",
+              "label": "Extra small"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_gap",
+          "label": "Content gap",
+          "default": "fitted",
+          "options": [
+            {
+              "value": "tight",
+              "label": "Extra small"
+            },
+            {
+              "value": "fitted",
+              "label": "Small"
+            },
+            {
+              "value": "standard",
+              "label": "Medium"
+            }
+          ]
+        },
+        {
+          "type": "url",
+          "id": "card_link",
+          "label": "Card link"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "select",
+          "id": "subheading_style",
+          "label": "Subheading style",
+          "default": "",
+          "options": [
+            {
+              "value": "",
+              "label": "None"
+            },
+            {
+              "value": "border",
+              "label": "With border"
+            },
+            {
+              "value": "thick-border",
+              "label": "With thick border"
+            }
+          ]
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Image card",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "heading_size_mobile",
+          "label": "Heading size on mobile",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Inherit"
+            },
+            {
+              "value": "custom",
+              "label": "Custom"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "range",
+          "id": "heading_size_custom",
+          "label": "Custom size",
+          "min": 12,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 18,
+          "visible_if": "{{ block.settings.heading_size_mobile == 'custom' }}"
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Text",
+          "default": "<p>Combine images with text and a stand-out offer</p>"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--primary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "header",
+          "content": "Mobile layout"
+        },
+        {
+          "type": "image_picker",
+          "id": "image_mobile",
+          "label": "Image"
+        },
+        {
+          "type": "checkbox",
+          "id": "order_first",
+          "label": "Display the card above collapsible tabs",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collapsible tabs",
+      "blocks": [
+        {
+          "type": "collapsible_item"
+        },
+        {
+          "type": "collapsible_item"
+        },
+        {
+          "type": "collapsible_item"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

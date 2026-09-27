@@ -1,0 +1,674 @@
+{{ 'section-buttons-with-icon.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'buttons-with-icon-list.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign enable_slider = section.settings.enable_slider
+-%}
+
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+
+{%- style -%}
+  .section-{{ section.id }}:has(.swiper-button-lock) .button-list__items {
+    justify-content: {{ section.settings.item_alignment | replace: 'left', 'flex-start' | replace: 'right', 'flex-end' }};
+  }
+{%- endstyle -%}
+
+<div
+  class="section section-{{ section.id }} section--padding button-list color-{{ section.settings.color_scheme }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="section__container page-width page-width--{{ section.settings.container }}">
+    {% render 'section-heading', section_settings: section.settings %}
+    <div class="section__content swiper-show-nav-on-hover inline-flex relative{% if section.settings.swipe_on_mobile %} swipe-mobile swipe-mobile--auto-cols{% endif %}">
+      <button-list
+        class="block w-full m-0{% if enable_slider %} swiper overlay-list{% endif %}"
+        data-section-id="{{ section.id }}"
+        {% if enable_slider %}
+          data-slider-reach="begin"
+          data-enable-slider="true"
+        {% endif %}
+      >
+        <div class="button-list__items flex{% if enable_slider %} swiper-wrapper{%  else %} flex-wrap justify-{{ section.settings.item_alignment | replace: 'left', 'start' | replace: 'right', 'end' }}{% endif %}{% if section.settings.swipe_on_mobile %} swipe-mobile__inner{% endif %}">
+          {%- for block in section.blocks -%}
+            <div class="button-list__item{% if enable_slider %} swiper-slide{% endif %}">
+              {%- liquid
+                assign tag = 'div'
+                if block.settings.button_link != blank
+                  assign tag = 'a'
+                endif
+              -%}
+              <div
+                class="block button-item{% if block.settings.icon_img != blank %} button-item--image{% elsif block.settings.icon != 'none' %} button-item--icon{% endif %}"
+                data-index="{{ forloop.index0 }}"
+                {{ block.shopify_attributes }}
+              >
+                <{{ tag }}
+                  class="button-item__inner hover-wrapper btn {{ section.settings.item_button_style }}"
+                  {% if block.settings.button_link != blank %}
+                    href="{{ block.settings.button_link }}"
+                  {% endif %}
+                >
+                  <span class="btn__text flex items-center gap-x-2">
+                    {%- if block.settings.icon_img != blank -%}
+                      {%- liquid
+                        assign alt = block.settings.icon_img.alt | default: shop.name | escape
+                        assign image_widths = '38, 48, 76, 96, 132, ' | append: block.settings.icon_img.width
+                      -%}
+                      {%- capture image_sizes -%}(min-width:768px) 48px, 38px{%- endcapture -%}
+                      <picture
+                        class="media-wrapper button-item__icon flex shrink-0 rounded"
+                        style="--aspect-ratio: 1;"
+                      >
+                        {{
+                          block.settings.icon_img
+                          | image_url: width: block.settings.icon_img.width
+                          | image_tag:
+                            loading: 'lazy',
+                            class: 'motion-reduce absolute inset-0 w-full h-full',
+                            widths: image_widths,
+                            sizes: image_sizes,
+                            is: 'image-lazy',
+                            alt: alt
+                        }}
+                      </picture>
+                    {%- elsif block.settings.icon != 'none' -%}
+                      <span class="button-item__icon flex shrink-0 rounded">
+                        {% render 'icons', icon: block.settings.icon %}
+                      </span>
+                    {%- endif -%}
+
+                    {%- if block.settings.button_label != blank -%}
+                      <span class="button-item__text flex-1{% unless section.settings.item_button_font == 'button' %} font-{{ section.settings.item_button_font }}{% endunless %}">
+                        {{- block.settings.button_label -}}
+                      </span>
+                    {%- endif -%}
+                  </span>
+                </{{ tag }}>
+              </div>
+            </div>
+          {%- endfor -%}
+        </div>
+      </button-list>
+      {%- if enable_slider -%}
+        <div class="swiper-controls swiper-controls--nav-floating hidden md:block">
+          <button
+            class="swiper-button swiper-button-prev btn swiper-button--drop-shadow"
+            name="previous"
+            aria-label="{{ 'general.slider.previous_slide' | t }}"
+          >
+            <span class="btn__text"> {% render 'icon-caret-left' %}</span>
+          </button>
+          <button
+            class="swiper-button swiper-button-next btn swiper-button--drop-shadow"
+            name="next"
+            aria-label="{{ 'general.slider.next_slide' | t }}"
+          >
+            <span class="btn__text"> {% render 'icon-caret-right' %}</span>
+          </button>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Button group",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "default": "Button group",
+      "label": "Heading",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Block settings"
+    },
+    {
+      "type": "select",
+      "id": "item_alignment",
+      "label": "Content alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "item_button_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "btn--primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "btn--secondary",
+          "label": "Secondary button"
+        },
+        {
+          "value": "btn--icon",
+          "label": "Icon button"
+        }
+      ],
+      "default": "btn--icon"
+    },
+    {
+      "type": "select",
+      "id": "item_button_font",
+      "label": "Button font",
+      "options": [
+        {
+          "value": "button",
+          "label": "Button font"
+        },
+        {
+          "value": "body",
+          "label": "Body font"
+        },
+        {
+          "value": "body-bolder",
+          "label": "Body font bolder"
+        },
+        {
+          "value": "heading",
+          "label": "Headings font"
+        }
+      ],
+      "default": "button"
+    },
+    {
+      "type": "header",
+      "content": "Carousel settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_slider",
+      "label": "Enable carousel on desktop",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "swipe_on_mobile",
+      "default": true,
+      "label": "Enable swipe on mobile"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 50
+    }
+  ],
+  "blocks": [
+    {
+      "type": "button_item",
+      "name": "Button",
+      "settings": [
+        {
+          "type": "header",
+          "content": "General"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        },
+        {
+          "type": "header",
+          "content": "Icon"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "car-simple",
+              "label": "Car simple"
+            },
+            {
+              "value": "truck",
+              "label": "Truck"
+            },
+            {
+              "value": "package",
+              "label": "Package"
+            },
+            {
+              "value": "currency-circle-dollar",
+              "label": "Currency circle dollar"
+            },
+            {
+              "value": "gift",
+              "label": "Gift"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "globe",
+              "label": "Globe"
+            },
+            {
+              "value": "check",
+              "label": "Check"
+            },
+            {
+              "value": "arrow-up-left",
+              "label": "Arrow up left"
+            },
+            {
+              "value": "lightning",
+              "label": "Lightning"
+            },
+            {
+              "value": "calendar-blank",
+              "label": "Calendar blank"
+            },
+            {
+              "value": "bell-ringing",
+              "label": "Bell ringing"
+            },
+            {
+              "value": "location",
+              "label": "Location"
+            },
+            {
+              "value": "tag",
+              "label": "Tag"
+            },
+            {
+              "value": "map-pin",
+              "label": "Map pin"
+            },
+            {
+              "value": "smiley",
+              "label": "Smiley"
+            },
+            {
+              "value": "stool",
+              "label": "Stool"
+            },
+            {
+              "value": "clock",
+              "label": "Clock"
+            },
+            {
+              "value": "phone",
+              "label": "Phone"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "paperplane",
+              "label": "Paperplane"
+            },
+            {
+              "value": "sliders",
+              "label": "Sliders"
+            },
+            {
+              "value": "sound",
+              "label": "Sound"
+            },
+            {
+              "value": "music",
+              "label": "Music"
+            },
+            {
+              "value": "airplane",
+              "label": "Airplane"
+            },
+            {
+              "value": "alarm",
+              "label": "Alarm"
+            },
+            {
+              "value": "play-list",
+              "label": "Play list"
+            },
+            {
+              "value": "drop-slash",
+              "label": "Drop slash"
+            },
+            {
+              "value": "pause-circle",
+              "label": "Pause circle"
+            },
+            {
+              "value": "acorn",
+              "label": "Acorn"
+            },
+            {
+              "value": "leaf",
+              "label": "Leaf"
+            }
+          ],
+          "default": "check"
+        },
+        {
+          "type": "image_picker",
+          "id": "icon_img",
+          "label": "Custom icon"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Button group",
+      "blocks": [
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        },
+        {
+          "type": "button_item",
+          "settings": {
+            "icon": "check"
+          }
+        }
+      ]
+    }
+  ],
+  "disabled_on": {
+    "groups": [
+      "footer",
+      "header",
+      "custom.overlay"
+    ]
+  }
+}
+{% endschema %}

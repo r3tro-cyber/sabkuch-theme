@@ -1,0 +1,3231 @@
+{%- liquid
+  assign enable_sticky_column = section.settings.enable_sticky_column
+  assign swipe_on_mobile = section.settings.swipe_on_mobile
+  assign swipe_on_tablet = false
+
+  if section.blocks.size == 3
+    assign swipe_on_tablet = true
+  endif
+
+  if swipe_on_mobile and section.blocks.size > 2
+    assign column_size_modulo = section.blocks.size | modulo: 2
+    if column_size_modulo > 0
+      assign swipe_on_tablet = true
+    endif
+  endif
+-%}
+{% render 'divider',
+  show_divider: section.settings.show_section_divider,
+  divider_width: section.settings.divider_width
+%}
+<div
+  class="section section-{{ section.id }} section--padding section--custom-content page-width page-width--{{ section.settings.container }} color-{{ section.settings.color_scheme }} {{ section.index }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px;--section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  data-id="{{ section.id }}"
+>
+  {% render 'section-heading', section_settings: section.settings %}
+  <div class="section__content f-grid--gap-{{ section.settings.column_gap }}{% if swipe_on_tablet %} swipe-tablet{% endif %}{% if swipe_on_mobile %} swipe-mobile swipe-mobile--{{ section.settings.columns_mobile }}-cols{% endif %}">
+    <div class="f-flex f-grid--gap-{{ section.settings.column_gap }} f-grid--row-gap-{{ section.settings.row_gap }}{% if swipe_on_tablet %} swipe-tablet__inner{% endif %}{% if swipe_on_mobile %} swipe-mobile__inner{% endif %}">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign vertical_alignment = block.settings.alignment
+          case block.settings.width
+            when '16%'
+              assign block_width = 'w-full md:w-1/2 lg:w-2/12'
+            when '20%'
+              assign block_width = 'w-full md:w-1/2 lg:w-1/5'
+            when '25%'
+              assign block_width = 'w-full md:w-1/2 lg:w-1/4'
+            when '33%'
+              assign block_width = 'w-full md:w-1/2 lg:w-1/3'
+            when '41%'
+              assign block_width = 'w-full md:w-1/2 lg:w-5/12'
+            when '50%'
+              assign block_width = 'w-full md:w-1/2 lg:w-1/2'
+            when '58%'
+              assign block_width = 'w-full md:w-1/2 lg:w-7/12'
+            when '66%'
+              assign block_width = 'w-full md:w-1/2 lg:w-8/12'
+            when '75%'
+              assign block_width = 'w-full md:w-1/2 lg:w-9/12'
+            when '80%'
+              assign block_width = 'w-full md:w-1/2 lg:w-4/5'
+            when '83%'
+              assign block_width = 'w-full md:w-1/2 lg:w-10/12'
+            else
+              assign block_width = 'w-full'
+          endcase
+        -%}
+        <div
+          id="block-{{ block.id }}"
+          class="f-column relative custom-content-block--{{ block.type }} md:flex items-{{ vertical_alignment | default: 'center' }} {{ block_width }} {{ block.settings.block_custom_class }}"
+          data-block-type="{{ block.type }}"
+          {{ block.shopify_attributes }}
+        >
+          <div class="custom__block custom__block--{{ block.type }} w-full text-{{ block.settings.content_alignment }}{% if enable_sticky_column %} sticky-element{% endif %}">
+            {%- case block.type -%}
+              {%- when 'text' -%}
+                {%- assign motion_delay = 50 -%}
+                <div class="rich-text">
+                  {%- if block.settings.subheading != blank -%}
+                    <motion-element
+                      data-motion="fade-up"
+                      data-motion-delay="{{ motion_delay }}"
+                      class="block rich-text__subheading text-subheading"
+                    >
+                      {{ block.settings.subheading }}
+                    </motion-element>
+                    {%- assign motion_delay = motion_delay | plus: 50 -%}
+                  {%- endif -%}
+                  {%- if block.settings.heading != blank -%}
+                    <h2 class="rich-text__heading inline-richtext {{ block.settings.heading_size }}">
+                      <motion-element class="block" data-motion="fade-up" data-motion-delay="{{ motion_delay }}">
+                        {% render 'highlight-text',
+                          hl_text: block.settings.heading,
+                          hl_style: block.settings.highlight_style,
+                          hl_font_style: block.settings.highlight_font_style,
+                          hl_style_color: block.settings.highlight_style_color,
+                          hl_text_color: block.settings.highlight_text_color
+                        %}
+                      </motion-element>
+                    </h2>
+                    {%- assign motion_delay = motion_delay | plus: 50 -%}
+                  {%- endif -%}
+                  {%- if block.settings.description != blank -%}
+                    <motion-element
+                      data-motion="fade-up"
+                      data-motion-delay="{{ motion_delay }}"
+                      class="block rich-text__text rte {{ block.settings.text_size }}"
+                    >
+                      {{ block.settings.description }}
+                    </motion-element>
+                    {%- assign motion_delay = motion_delay | plus: 50 -%}
+                  {%- endif -%}
+                  {%- if block.settings.button_label != blank -%}
+                    <motion-element
+                      data-motion="fade-up"
+                      data-motion-delay="{{ motion_delay }}"
+                      class="block rich-text__button"
+                    >
+                      {% render 'button',
+                        button_style: block.settings.button_style,
+                        button_link: block.settings.button_link,
+                        button_label: block.settings.button_label,
+                        button_icon: block.settings.button_icon
+                      %}
+                    </motion-element>
+                  {% endif %}
+                </div>
+              {%- when 'image' -%}
+                {%- liquid
+                  assign image = block.settings.image
+                  if image != blank
+                    assign image_ratio = image.aspect_ratio
+                  else
+                    assign image_ratio = '1'
+                  endif
+
+                  assign alt = image.alt | default: shop.name | escape
+                  assign loading = 'lazy'
+                  assign fetchpriority = 'low'
+                  if section.index < 2
+                    assign loading = 'eager'
+                    assign fetchpriority = 'high'
+                  endif
+                -%}
+                <div
+                  class="media-wrapper blocks-radius{% if image == blank %} bg-none{% endif %}"
+                  style="--aspect-ratio: {{ image_ratio }};"
+                >
+                  <motion-element class="block" data-motion="zoom-out-sm">
+                    {%- if image != blank -%}
+                      {{
+                        image
+                        | image_url: width: 1500
+                        | image_tag:
+                          loading: loading,
+                          fetchpriority: fetchpriority,
+                          class: 'motion-reduce',
+                          widths: '375, 550, 750, 1100, 1500, 1780, 2000, 3000, 3840',
+                          is: 'image-lazy',
+                          alt: alt
+                      }}
+                    {%- else -%}
+                      {{ 'image' | placeholder_svg_tag: 'placeholder-svg' }}
+                    {%- endif -%}
+                  </motion-element>
+                </div>
+              {%- when 'image_card' -%}
+                {% render 'card-image',
+                  parent_color_scheme: section.settings.color_scheme,
+                  color_scheme: block.settings.color_scheme,
+                  color_scheme_mobile: block.settings.color_scheme_mobile,
+                  link: block.settings.card_link,
+                  image: block.settings.image,
+                  image_ratio: block.settings.image_ratio,
+                  image_overlay_opacity: block.settings.image_overlay_opacity,
+                  image_mobile: block.settings.image_mobile,
+                  heading: block.settings.heading,
+                  highlight_style: block.settings.highlight_style,
+                  highlight_font_style: block.settings.highlight_font_style,
+                  highlight_style_color: block.settings.highlight_style_color,
+                  highlight_text_color: block.settings.highlight_text_color,
+                  heading_size: block.settings.heading_size,
+                  subheading: block.settings.subheading,
+                  subheading_style: block.settings.subheading_style,
+                  description: block.settings.description,
+                  button_label: block.settings.button_label,
+                  button_style: block.settings.button_style,
+                  button_icon: block.settings.button_icon,
+                  rich_text_size: block.settings.content_gap,
+                  content_spacing: block.settings.content_spacing,
+                  content_position: block.settings.content_position,
+                  content_alignment: block.settings.content_alignment,
+                  content_alignment_mobile: block.settings.content_alignment_mobile,
+                  show_text_below: block.settings.show_text_below,
+                  show_badge: block.settings.show_badge,
+                  badge_size: 'medium',
+                  badge_shape: block.settings.badge_shape,
+                  badge_position: block.settings.badge_position,
+                  badge_main_text: block.settings.badge_text,
+                  badge_main_text_size: 'h3',
+                  badge_subtext: block.settings.badge_subtext,
+                  badge_subtext_size: 'h6',
+                  badge_color_scheme: block.settings.badge_color_scheme,
+                  enable_preload_image: block.settings.enable_preload_image,
+                  section_index: section.index,
+                  forloop_index: forloop.index,
+                  heading_size_custom: block.settings.heading_size_custom,
+                  heading_size_mobile: block.settings.heading_size_mobile
+                %}
+              {%- when 'image_card_with_product' -%}
+                {{ 'component-card-img-with-product.css' | asset_url | stylesheet_tag }}
+                {% render 'card-image-with-product',
+                  color_scheme: block.settings.color_scheme,
+                  image: block.settings.image,
+                  image_ratio: block.settings.image_ratio,
+                  heading: block.settings.heading,
+                  highlight_style: block.settings.highlight_style,
+                  highlight_font_style: block.settings.highlight_font_style,
+                  highlight_style_color: block.settings.highlight_style_color,
+                  highlight_text_color: block.settings.highlight_text_color,
+                  heading_size: block.settings.heading_size,
+                  subheading: block.settings.subheading,
+                  description: block.settings.description,
+                  button_label: block.settings.button_label,
+                  button_style: block.settings.button_style,
+                  button_icon: block.settings.button_icon,
+                  product: block.settings.product
+                %}
+              {%- when 'lookbook_card_hotspot' -%}
+                {{ 'component-lookbook-card.css' | asset_url | stylesheet_tag }}
+                <script src="{{ 'lookbook-icon.js' | asset_url }}" defer="defer"></script>
+                {% render 'lookbook-card-hotspot',
+                  block: block,
+                  image: block.settings.image,
+                  image_ratio: block.settings.image_ratio,
+                  icon_style: block.settings.icon_style,
+                  icon_color: block.settings.icon_color
+                %}
+              {%- when 'video' -%}
+                {%- liquid
+                  assign poster = section.settings.video.preview_image | default: section.settings.cover_image
+
+                  if block.settings.video_ratio == 'adapt'
+                    if poster != null
+                      assign video_ratio = poster.aspect_ratio
+                    else
+                      assign video_ratio = '16/9'
+                    endif
+                  else
+                    assign video_ratio = block.settings.video_ratio
+                  endif
+                -%}
+                <div
+                  class="media media--adapt blocks-radius"
+                  style="--media-ratio: {{ video_ratio }};"
+                >
+                  {%- render 'video',
+                    video: block.settings.video,
+                    video_url: block.settings.video_url,
+                    muted: block.settings.enable_video_autoplay,
+                    autoplay: block.settings.enable_video_autoplay,
+                    controls: true,
+                    loop: block.settings.enable_video_looping,
+                    description: block.settings.description,
+                    cover_image: block.settings.cover_image,
+                    show_play_button: true
+                  -%}
+                </div>
+              {%- when 'lookbook_card' -%}
+                {{ 'component-lookbook-card-modal.css' | asset_url | stylesheet_tag }}
+                <script src="{{ 'lookbook-card.js' | asset_url }}" defer="defer"></script>
+                {% liquid
+                  assign video = block.settings.video
+                  assign image = block.settings.image
+                  assign image_ratio = block.settings.image_ratio | default: '1/1'
+                  if image_ratio == 'adapt'
+                    if video != blank
+                      assign image_ratio = video.aspect_ratio
+                    elsif image != blank
+                      assign image_ratio = image.aspect_ratio
+                    else
+                      assign image_ratio = '1/1'
+                    endif
+                  endif
+                %}
+                {% render 'lookbook-card',
+                  block_id: block.id,
+                  product_list: block.settings.product_list,
+                  image_ratio: image_ratio,
+                  pcard_image_ratio: block.settings.pcard_image_ratio,
+                  image: block.settings.image,
+                  video: block.settings.video,
+                  heading: block.settings.heading,
+                  highlight_style: block.settings.highlight_style,
+                  highlight_font_style: block.settings.highlight_font_style,
+                  highlight_style_color: block.settings.highlight_style_color,
+                  highlight_text_color: block.settings.highlight_text_color,
+                  heading_size: block.settings.heading_size
+                %}
+              {%- when 'collections' -%}
+                {{ 'component-collection-item-slider.css' | asset_url | stylesheet_tag }}
+                <script src="{{ 'collection-item-slider.js' | asset_url }}" defer="defer"></script>
+                <div class="collecion-list__sliders block w-full" data>
+                  {%- if block.settings.collection_list != blank -%}
+                    {%- for collection in block.settings.collection_list -%}
+                      {%- render 'collection-item-slider', collection: collection, block: block -%}
+                    {% endfor %}
+                  {%- else -%}
+                    {%- render 'collection-item-slider', block: block -%}
+                  {%- endif -%}
+                </div>
+            {%- endcase -%}
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Custom content",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "header",
+      "content": "General"
+    },
+    {
+      "type": "select",
+      "id": "container",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Container"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sticky_column",
+      "default": false,
+      "label": "Enable sticky columns on desktop"
+    },
+    {
+      "type": "header",
+      "content": "Section header"
+    },
+    {
+      "id": "section_header_alignment",
+      "type": "select",
+      "label": "Text alignment",
+      "default": "left",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "id": "section_header_alignment_mobile",
+      "type": "select",
+      "label": "Text alignment on mobile",
+      "default": "inherit",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "inline_richtext",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Custom content",
+      "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+    },
+    {
+      "type": "select",
+      "id": "highlight_style",
+      "label": "Highlight style",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "hand_drawn_circle",
+          "label": "Hand-drawn circle"
+        },
+        {
+          "value": "thick_underline",
+          "label": "Thick underline"
+        },
+        {
+          "value": "wave_underline",
+          "label": "Wave underline"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "highlight_font_style",
+      "label": "Highlight font style",
+      "options": [
+        {
+          "value": "italic",
+          "label": "Italic"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "highlight_style_color",
+      "label": "Highlight style color"
+    },
+    {
+      "type": "color",
+      "id": "highlight_text_color",
+      "label": "Highlight text color"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "default": "h1",
+      "options": [
+        {
+          "value": "h5",
+          "label": "Heading - Extra small"
+        },
+        {
+          "value": "h4",
+          "label": "Heading - Small"
+        },
+        {
+          "value": "h3",
+          "label": "Heading - Medium"
+        },
+        {
+          "value": "h2",
+          "label": "Heading - Large"
+        },
+        {
+          "value": "h1",
+          "label": "Heading - Extra large"
+        },
+        {
+          "value": "hd2",
+          "label": "Mega title - Base"
+        },
+        {
+          "value": "hd1",
+          "label": "Mega title - Large"
+        }
+      ]
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Text",
+      "default": "<p>Combine images with text and a stand-out offer</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "Text size",
+      "default": "text-base",
+      "options": [
+        {
+          "value": "text-sm",
+          "label": "Small"
+        },
+        {
+          "value": "text-base",
+          "label": "Base size"
+        },
+        {
+          "value": "text-lg",
+          "label": "Large"
+        },
+        {
+          "value": "text-inherit",
+          "label": "Inherit"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Grid settings"
+    },
+    {
+      "type": "select",
+      "id": "column_gap",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "medium",
+      "label": "Column gap"
+    },
+    {
+      "type": "select",
+      "id": "row_gap",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Same as the column gap"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "2xs",
+          "label": "Extra extra small"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "large",
+      "label": "Row gap"
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "swipe_on_mobile",
+      "default": false,
+      "label": "Enable swipe on mobile"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "options": [
+        {
+          "value": "1",
+          "label": "1 column"
+        },
+        {
+          "value": "2",
+          "label": "2 columns"
+        }
+      ],
+      "default": "1",
+      "label": "Number of columns on mobile"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Section divider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_section_divider",
+      "default": false,
+      "label": "Show divider"
+    },
+    {
+      "type": "select",
+      "id": "divider_width",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "fixed",
+      "label": "Divider width"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "image_card",
+      "name": "Image card",
+      "settings": [
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "default": "adapt",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "range",
+          "id": "image_overlay_opacity",
+          "min": 0,
+          "max": 100,
+          "step": 2,
+          "unit": "%",
+          "label": "Image overlay opacity",
+          "default": 0
+        },
+        {
+          "type": "header",
+          "content": "Content settings"
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Content position",
+          "options": [
+            {
+              "group": "Standard",
+              "label": "Top left",
+              "value": "top-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Top center",
+              "value": "top-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Top right",
+              "value": "top-right"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle left",
+              "value": "middle-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle center",
+              "value": "middle-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Middle right",
+              "value": "middle-right"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom left",
+              "value": "bottom-left"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom center",
+              "value": "bottom-center"
+            },
+            {
+              "group": "Standard",
+              "label": "Bottom right",
+              "value": "bottom-right"
+            },
+            {
+              "group": "Split",
+              "label": "Middle content",
+              "value": "split-middle-content"
+            },
+            {
+              "group": "Split",
+              "label": "Bottom button",
+              "value": "split-bottom-button"
+            },
+            {
+              "group": "Split",
+              "label": "Top subheading",
+              "value": "split-top-subheading"
+            },
+            {
+              "group": "Below image",
+              "label": "Below image",
+              "value": "below"
+            }
+          ],
+          "default": "bottom-center"
+        },
+        {
+          "type": "select",
+          "id": "content_alignment",
+          "label": "Content alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_spacing",
+          "label": "Content spacing",
+          "default": "medium",
+          "options": [
+            {
+              "value": "extra-small",
+              "label": "Extra small"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "content_gap",
+          "label": "Content gap",
+          "default": "fitted",
+          "options": [
+            {
+              "value": "tight",
+              "label": "Extra small"
+            },
+            {
+              "value": "fitted",
+              "label": "Small"
+            },
+            {
+              "value": "standard",
+              "label": "Medium"
+            }
+          ]
+        },
+        {
+          "type": "url",
+          "id": "card_link",
+          "label": "Card link"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "select",
+          "id": "subheading_style",
+          "label": "Subheading style",
+          "default": "",
+          "options": [
+            {
+              "value": "",
+              "label": "None"
+            },
+            {
+              "value": "border",
+              "label": "With border"
+            },
+            {
+              "value": "thick-border",
+              "label": "With thick border"
+            }
+          ]
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Image card",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "heading_size_mobile",
+          "label": "Heading size on mobile",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Inherit"
+            },
+            {
+              "value": "custom",
+              "label": "Custom"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "range",
+          "id": "heading_size_custom",
+          "label": "Custom size",
+          "min": 12,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 18,
+          "visible_if": "{{ block.settings.heading_size_mobile == 'custom' }}"
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--primary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "header",
+          "content": "Badge settings"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_badge",
+          "label": "Show badge",
+          "default": false
+        },
+        {
+          "type": "color_scheme",
+          "id": "badge_color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "select",
+          "id": "badge_shape",
+          "label": "Shape",
+          "default": "circle",
+          "options": [
+            {
+              "value": "circle",
+              "label": "Circle"
+            },
+            {
+              "value": "square",
+              "label": "Square"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "badge_position",
+          "label": "Position",
+          "default": "top-right",
+          "options": [
+            {
+              "value": "top-right",
+              "label": "Top right"
+            },
+            {
+              "value": "top-left",
+              "label": "Top left"
+            },
+            {
+              "value": "bottom-right",
+              "label": "Bottom right"
+            },
+            {
+              "value": "bottom-left",
+              "label": "Bottom left"
+            }
+          ]
+        },
+        {
+          "type": "inline_richtext",
+          "id": "badge_subtext",
+          "label": "Subtext",
+          "default": "Save"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "badge_text",
+          "label": "Text",
+          "default": "99$"
+        },
+        {
+          "type": "header",
+          "content": "Mobile settings"
+        },
+        {
+          "type": "color_scheme",
+          "id": "color_scheme_mobile",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "image_picker",
+          "id": "image_mobile",
+          "label": "Image"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_text_below",
+          "default": false,
+          "label": "Show content below image"
+        },
+        {
+          "type": "select",
+          "id": "content_alignment_mobile",
+          "label": "Content alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        },
+        {
+          "type": "header",
+          "content": "Advanced"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_preload_image",
+          "label": "Enable preload image",
+          "info": "If this section is visible when the page loads, enabling this setting can reduce LCP and may improve site speed scores."
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "name": "Video",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Shopify-hosted video"
+        },
+        {
+          "type": "video",
+          "label": "Video",
+          "id": "video"
+        },
+        {
+          "type": "header",
+          "content": "Or embed video from URL",
+          "info": "Shows when no Shopify-hosted video is selected."
+        },
+        {
+          "type": "video_url",
+          "id": "video_url",
+          "accept": [
+            "vimeo",
+            "youtube"
+          ],
+          "default": "https://www.youtube.com/watch?v=_9VUPq3SxOc",
+          "label": "URL",
+          "info": "Use a YouTube or Vimeo URL"
+        },
+        {
+          "type": "image_picker",
+          "id": "cover_image",
+          "label": "Cover image"
+        },
+        {
+          "type": "select",
+          "id": "video_ratio",
+          "label": "Video ratio",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            },
+            {
+              "value": "4/5",
+              "label": "Portrait (4:5)"
+            },
+            {
+              "value": "16/9",
+              "label": "Widescreen (16:9)"
+            },
+            {
+              "value": "9/16",
+              "label": "Vertical (9:16)"
+            }
+          ],
+          "default": "adapt"
+        },
+        {
+          "type": "text",
+          "id": "description",
+          "label": "Video alt text",
+          "info": "Describe the video for customers using screen readers. [Learn more](https://help.shopify.com/manual/online-store/themes/theme-structure/theme-features#video)"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_video_autoplay",
+          "label": "Enable video autoplay",
+          "info": "Video are muted automatically to allow autoplay.",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_video_looping",
+          "label": "Enable video looping",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        {
+          "type": "select",
+          "id": "content_alignment",
+          "label": "Content alignment",
+          "default": "left",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ]
+        },
+        {
+          "type": "inline_richtext",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Talk about your brand",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Text",
+          "default": "<p>Use this text to share information about your brand with your customers. Describe a product, share announcements, or welcome customers to your store.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "default": "text-base",
+          "options": [
+            {
+              "value": "text-sm",
+              "label": "Small"
+            },
+            {
+              "value": "text-base",
+              "label": "Base size"
+            },
+            {
+              "value": "text-lg",
+              "label": "Large"
+            },
+            {
+              "value": "text-inherit",
+              "label": "Inherit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--primary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    },
+    {
+      "type": "lookbook_card",
+      "name": "Lookbook card",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Products"
+        },
+        {
+          "type": "product_list",
+          "id": "product_list",
+          "limit": 5,
+          "label": "Products"
+        },
+        {
+          "type": "select",
+          "id": "pcard_image_ratio",
+          "label": "Image ratio",
+          "default": "",
+          "options": [
+            {
+              "value": "",
+              "label": "Use global settings"
+            },
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "video",
+          "label": "Video",
+          "id": "video"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "default": "adapt",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Heading"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Shop this look",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h5",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    },
+    {
+      "type": "image_card_with_product",
+      "name": "Image card with product",
+      "settings": [
+        {
+          "type": "header",
+          "content": "General"
+        },
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1"
+        },
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "default": "adapt",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Content"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Card Heading",
+          "info": "To add an animated highlight to text, simply wrap it in italics. Click the \"I\" button in the editor to toggle italics when highlighting text."
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "hand_drawn_circle",
+              "label": "Hand-drawn circle"
+            },
+            {
+              "value": "thick_underline",
+              "label": "Thick underline"
+            },
+            {
+              "value": "wave_underline",
+              "label": "Wave underline"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "highlight_font_style",
+          "label": "Highlight font style",
+          "options": [
+            {
+              "value": "italic",
+              "label": "Italic"
+            },
+            {
+              "value": "normal",
+              "label": "Normal"
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "id": "highlight_style_color",
+          "label": "Highlight style color"
+        },
+        {
+          "type": "color",
+          "id": "highlight_text_color",
+          "label": "Highlight text color"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "default": "h1",
+          "options": [
+            {
+              "value": "h5",
+              "label": "Heading - Extra small"
+            },
+            {
+              "value": "h4",
+              "label": "Heading - Small"
+            },
+            {
+              "value": "h3",
+              "label": "Heading - Medium"
+            },
+            {
+              "value": "h2",
+              "label": "Heading - Large"
+            },
+            {
+              "value": "h1",
+              "label": "Heading - Extra large"
+            },
+            {
+              "value": "hd2",
+              "label": "Mega title - Base"
+            },
+            {
+              "value": "hd1",
+              "label": "Mega title - Large"
+            }
+          ]
+        },
+        {
+          "type": "richtext",
+          "id": "description",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Button label"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            {
+              "value": "btn--primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "btn--secondary",
+              "label": "Secondary button"
+            },
+            {
+              "value": "btn--underline",
+              "label": "Underline button"
+            },
+            {
+              "value": "btn--plain",
+              "label": "Plain button"
+            }
+          ],
+          "default": "btn--secondary"
+        },
+        {
+          "type": "select",
+          "id": "button_icon",
+          "label": "Button icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "caret-right",
+              "label": "Caret right"
+            },
+            {
+              "value": "caret-left",
+              "label": "Caret left"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            },
+            {
+              "value": "arrow-left",
+              "label": "Arrow left"
+            },
+            {
+              "value": "close",
+              "label": "Close"
+            },
+            {
+              "value": "home",
+              "label": "Home"
+            },
+            {
+              "value": "search",
+              "label": "Search"
+            },
+            {
+              "value": "hamburger",
+              "label": "Hamburger"
+            },
+            {
+              "value": "pencil",
+              "label": "Pencil"
+            },
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "cart",
+              "label": "Cart"
+            },
+            {
+              "value": "account",
+              "label": "Account"
+            },
+            {
+              "value": "sign-in",
+              "label": "Sign in"
+            },
+            {
+              "value": "chat",
+              "label": "Chat"
+            },
+            {
+              "value": "download",
+              "label": "Download"
+            },
+            {
+              "value": "upload",
+              "label": "Upload"
+            },
+            {
+              "value": "heart",
+              "label": "Heart"
+            },
+            {
+              "value": "play-outline",
+              "label": "Play"
+            },
+            {
+              "value": "pause",
+              "label": "Pause"
+            },
+            {
+              "value": "stop",
+              "label": "Stop"
+            },
+            {
+              "value": "speaker",
+              "label": "Speaker"
+            },
+            {
+              "value": "setting",
+              "label": "Setting"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "header",
+          "content": "Product"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    },
+    {
+      "type": "lookbook_card_hotspot",
+      "name": "Hotspot card",
+      "settings": [
+        {
+          "type": "header",
+          "content": "General"
+        },
+        {
+          "type": "select",
+          "id": "icon_style",
+          "label": "Icon style",
+          "options": [
+            {
+              "value": "plus",
+              "label": "Plus"
+            },
+            {
+              "value": "dot",
+              "label": "Dot"
+            }
+          ],
+          "default": "dot"
+        },
+        {
+          "type": "select",
+          "id": "icon_color",
+          "label": "Icon color",
+          "options": [
+            {
+              "value": "light",
+              "label": "Light"
+            },
+            {
+              "value": "dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "light"
+        },
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "select",
+          "id": "image_ratio",
+          "label": "Image ratio",
+          "default": "adapt",
+          "options": [
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Product 1"
+        },
+        {
+          "type": "product",
+          "id": "product_1",
+          "label": "Product"
+        },
+        {
+          "type": "range",
+          "id": "top_1",
+          "label": "Vertical alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 45
+        },
+        {
+          "type": "range",
+          "id": "left_1",
+          "label": "Horizontal alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 30
+        },
+        {
+          "type": "header",
+          "content": "Product 2"
+        },
+        {
+          "type": "product",
+          "id": "product_2",
+          "label": "Product"
+        },
+        {
+          "type": "range",
+          "id": "top_2",
+          "label": "Vertical alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "left_2",
+          "label": "Horizontal alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 70
+        },
+        {
+          "type": "header",
+          "content": "Product 3"
+        },
+        {
+          "type": "product",
+          "id": "product_3",
+          "label": "Product"
+        },
+        {
+          "type": "range",
+          "id": "top_3",
+          "label": "Vertical alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 62
+        },
+        {
+          "type": "range",
+          "id": "left_3",
+          "label": "Horizontal alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 43
+        },
+        {
+          "type": "header",
+          "content": "Product 4"
+        },
+        {
+          "type": "product",
+          "id": "product_4",
+          "label": "Product"
+        },
+        {
+          "type": "range",
+          "id": "top_4",
+          "label": "Vertical alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 9
+        },
+        {
+          "type": "range",
+          "id": "left_4",
+          "label": "Horizontal alignment",
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "step": 1,
+          "default": 63
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    },
+    {
+      "type": "collections",
+      "name": "Collections",
+      "settings": [
+        {
+          "type": "collection_list",
+          "id": "collection_list",
+          "label": "Collection list",
+          "limit": 3
+        },
+        {
+          "type": "header",
+          "content": "Grid settings"
+        },
+        {
+          "type": "range",
+          "id": "product_limit",
+          "label": "Maximum products to show",
+          "default": 3,
+          "min": 2,
+          "max": 12,
+          "step": 1
+        },
+        {
+          "type": "range",
+          "id": "columns_desktop",
+          "label": "Number of columns on desktop",
+          "min": 2,
+          "max": 4,
+          "step": 1,
+          "default": 3
+        },
+        {
+          "type": "select",
+          "id": "column_gap",
+          "label": "Column gap",
+          "default": "medium",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "2xs",
+              "label": "Extra extra small"
+            },
+            {
+              "value": "extra-small",
+              "label": "Extra small"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            },
+            {
+              "value": "extra-large",
+              "label": "Extra large"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "row_gap",
+          "label": "Row gap",
+          "default": "inherit",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Same as the column gap"
+            },
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "2xs",
+              "label": "Extra extra small"
+            },
+            {
+              "value": "extra-small",
+              "label": "Extra small"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            },
+            {
+              "value": "extra-large",
+              "label": "Extra large"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Carousel settings"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_slider",
+          "label": "Enable carousel on desktop",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "pcard_image_ratio",
+          "label": "Image ratio",
+          "default": "",
+          "options": [
+            {
+              "value": "",
+              "label": "Use global settings"
+            },
+            {
+              "value": "adapt",
+              "label": "Adapt to image"
+            },
+            {
+              "value": "1/1",
+              "label": "Square (1:1)"
+            },
+            {
+              "value": "3/4",
+              "label": "Portrait (3:4)"
+            },
+            {
+              "value": "4/3",
+              "label": "Landscape (4:3)"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Mobile layout"
+        },
+        {
+          "type": "select",
+          "id": "columns_mobile",
+          "label": "Number of columns on mobile",
+          "default": "1",
+          "options": [
+            {
+              "value": "1",
+              "label": "1 column"
+            },
+            {
+              "value": "2",
+              "label": "2 columns"
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "id": "swipe_on_mobile",
+          "label": "Enable swipe on mobile",
+          "default": true
+        },
+        {
+          "type": "header",
+          "content": "Block settings"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "Container width",
+          "options": [
+            {
+              "value": "16%",
+              "label": "16%"
+            },
+            {
+              "value": "20%",
+              "label": "20%"
+            },
+            {
+              "value": "25%",
+              "label": "25%"
+            },
+            {
+              "value": "33%",
+              "label": "33%"
+            },
+            {
+              "value": "41%",
+              "label": "41%"
+            },
+            {
+              "value": "50%",
+              "label": "50%"
+            },
+            {
+              "value": "58%",
+              "label": "58%"
+            },
+            {
+              "value": "66%",
+              "label": "66%"
+            },
+            {
+              "value": "75%",
+              "label": "75%"
+            },
+            {
+              "value": "80%",
+              "label": "80%"
+            },
+            {
+              "value": "83%",
+              "label": "83%"
+            },
+            {
+              "value": "100%",
+              "label": "100%"
+            }
+          ],
+          "default": "50%"
+        },
+        {
+          "type": "select",
+          "id": "alignment",
+          "label": "Vertical alignment",
+          "default": "center",
+          "options": [
+            {
+              "value": "start",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Middle"
+            },
+            {
+              "value": "end",
+              "label": "Bottom"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Custom attributes"
+        },
+        {
+          "type": "text",
+          "id": "block_custom_class",
+          "label": "Custom classes"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom content",
+      "blocks": [
+        {
+          "type": "image"
+        },
+        {
+          "type": "text"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
