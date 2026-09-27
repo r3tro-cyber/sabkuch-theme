@@ -103,8 +103,9 @@
                           assign collection_image = collection_object.featured_image
                         endif
 
-                        if collection_object.metafields.sabkuchtheme.collection_megamenu_image.value
-                          assign collection_image = collection_object.metafields.sabkuchtheme.collection_megamenu_image.value
+                        assign menu_meta_image = collection_object.metafields.sabkuchtheme.collection_megamenu_image.value | default: collection_object.metafields.foxtheme.collection_megamenu_image.value | default: collection_object.metafields.custom.collection_megamenu_image.value
+                        if menu_meta_image != blank
+                          assign collection_image = menu_meta_image
                         endif
 
                         if block.settings.show_image_of_first_product
@@ -119,13 +120,14 @@
 
                       <li>
                         <a href="{{ grandchildlink.url }}" class="grid gap-3 hover-wrapper reversed-link">
-                          {%- if is_collection_link -%}
+                          {%- if is_collection_link and collection_image != blank -%}
                             <div class="overflow-hidden blocks-radius-md">
                               <motion-element data-motion="zoom-out-sm" class="block">
                                 <div class="media-wrapper" style="--aspect-ratio: {{ image_ratio }};">
+                                  {%- assign col_img_width = collection_image.width | default: 300 -%}
                                   {{
                                     collection_image
-                                    | image_url: width: collection_image.featured_image.width
+                                    | image_url: width: col_img_width
                                     | image_tag:
                                       loading: 'lazy',
                                       class: 'motion-reduce hover-scale-up',

@@ -25,6 +25,17 @@
 }
 .categories__item-image {
   width: 6rem;
+  height: 6rem;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.categories__item-image img,
+.categories__item-image svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 @media (min-width: 1024px) {
   .categories__col {

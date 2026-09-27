@@ -251,14 +251,24 @@ console.log(
         return Promise.resolve();
       }
       imageOrArray = imageOrArray instanceof Element ? [imageOrArray] : Array.from(imageOrArray);
+      const imgs = imageOrArray.filter((el) => el && el.tagName === 'IMG');
+      if (imgs.length === 0) {
+        return Promise.resolve();
+      }
       return Promise.all(
-        imageOrArray.map((image) => {
+        imgs.map((image) => {
           return new Promise((resolve) => {
-            if ((image.tagName === 'IMG' && image.complete) || !image.offsetParent) {
+            if (image.complete || !image.offsetParent) {
               resolve();
-            } else {
-              image.onload = () => resolve();
+              return;
             }
+            const timer = setTimeout(resolve, 600);
+            const onDone = () => {
+              clearTimeout(timer);
+              resolve();
+            };
+            image.addEventListener('load', onDone, { once: true });
+            image.addEventListener('error', onDone, { once: true });
           });
         })
       );
@@ -1868,12 +1878,15 @@ class MotionObserverManager {
           }
         });
       },
-      { rootMargin: '0px 0px -80px 0px' }
+      { rootMargin: '100px 0px 100px 0px' }
     );
   }
 
   observe(element, callback) {
-    if (!this.observer) return;
+    if (!this.observer) {
+      callback();
+      return;
+    }
     this.elements.set(element, callback);
     this.observer.observe(element);
   }
@@ -1920,9 +1933,14 @@ class MotionElement extends HTMLElement {
   }
 
   connectedCallback() {
-    if (SabKuchTheme.config.motionReduced) return;
+    if (SabKuchTheme.config.motionReduced || (window.Shopify && window.Shopify.designMode)) {
+      this.setAttribute('data-initialized', 'true');
+      this.style.visibility = 'visible';
+      this.style.opacity = '1';
+      return;
+    }
 
-    const parentMotionElement = this.closest('motion-element:not(:scope)');
+    const parentMotionElement = this.parentElement ? this.parentElement.closest('motion-element') : null;
 
     if (parentMotionElement) {
       this.waitForParent(parentMotionElement);
@@ -1945,7 +1963,7 @@ class MotionElement extends HTMLElement {
 
     // Remove parent event listener
     if (this._parentEventHandler) {
-      const parent = this.closest('motion-element:not(:scope)');
+      const parent = this.parentElement ? this.parentElement.closest('motion-element') : null;
       if (parent) {
         parent.removeEventListener('motion-initialized', this._parentEventHandler);
       }
@@ -2022,7 +2040,7 @@ class MotionElement extends HTMLElement {
   get mediaElements() {
     // Cache media elements to avoid repeated DOM queries (performance optimization)
     if (!this._cachedMediaElements) {
-      this._cachedMediaElements = Array.from(this.querySelectorAll('img, iframe, svg'));
+      this._cachedMediaElements = Array.from(this.querySelectorAll('img'));
     }
     return this._cachedMediaElements;
   }
@@ -2403,6 +2421,7 @@ class TabsComponent extends HTMLElement {
     ).finished;
 
     toPanel.querySelector('grid-list') && toPanel.querySelector('grid-list').showGridItems();
+    toPanel.querySelectorAll('motion-element').forEach(el => el.refreshAnimation && el.refreshAnimation());
   }
 }
 customElements.define('tabs-component', TabsComponent);
